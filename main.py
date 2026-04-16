@@ -1,3 +1,6 @@
+-- MayChemXeoCan V2
+-- SilentAim and CombatEngine
+
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -6,76 +9,110 @@ local UserInputService = game:GetService("UserInputService")
 -- Variables
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character
-local Humanoid = Character:WaitForChild("Humanoid")
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Mouse = LocalPlayer:GetMouse()
 
--- SilentAim Variables
+-- Settings
 local SilentAimEnabled = true
-local SilentAimFOV = 50
-local SilentAimSpeed = 10
-
--- CombatEngine Variables
 local CombatEngineEnabled = true
-local CombatEngineRange = 20
-local CombatEngineSpeed = 5
+local Prediction = 0.15 -- Adjust this value based on your internet connection
+local AimFOV = 50 -- Field of view for aiming
+local AimSpeed = 10 -- Speed at which the aim moves
+local CombatDistance = 10 -- Maximum distance for combat
 
--- Prediction Math
-local function predict_position(target, speed)
-    local direction = (target.HumanoidRootPart.Position - HumanoidRootPart.Position).Unit
-    local distance = (target.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude
-    local predicted_position = target.HumanoidRootPart.Position + direction * speed * (distance / 100)
-    return predicted_position
+-- Functions
+local function GetClosestEnemy()
+    local closestEnemy = nil
+    local closestDistance = math.huge
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local enemyHumanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            if enemyHumanoidRootPart then
+                local distance = (HumanoidRootPart.Position - enemyHumanoidRootPart.Position).Magnitude
+                if distance < closestDistance then
+                    closestEnemy = player
+                    closestDistance = distance
+                end
+            end
+        end
+    end
+
+    return closestEnemy
 end
 
--- SilentAim Function
-local function silent_aim(target)
+local function GetAimDirection()
+    local mousePosition = Mouse.Hit.Position
+    local direction = (mousePosition - HumanoidRootPart.Position).Unit
+    return direction
+end
+
+local function GetPredictedPosition(enemyHumanoidRootPart)
+    local velocity = enemyHumanoidRootPart.Velocity
+    local predictedPosition = enemyHumanoidRootPart.Position + velocity * Prediction
+    return predictedPosition
+end
+
+-- SilentAim
+local function SilentAim()
     if SilentAimEnabled then
-        local predicted_position = predict_position(target, SilentAimSpeed)
-        local direction = (predicted_position - HumanoidRootPart.Position).Unit
-        local rotation = math.atan2(direction.X, direction.Z)
-        HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position, predicted_position)
+        local closestEnemy = GetClosestEnemy()
+        if closestEnemy then
+            local enemyHumanoidRootPart = closestEnemy.Character:FindFirstChild("HumanoidRootPart")
+            if enemyHumanoidRootPart then
+                local predictedPosition = GetPredictedPosition(enemyHumanoidRootPart)
+                local direction = (predictedPosition - HumanoidRootPart.Position).Unit
+                local angle = math.atan2(direction.X, direction.Z)
+
+                -- Move the aim to the predicted position
+                local aimDirection = GetAimDirection()
+                local aimAngle = math.atan2(aimDirection.X, aimDirection.Z)
+                local angleDifference = angle - aimAngle
+                if math.abs(angleDifference) > AimFOV / 2 then
+                    -- Move the aim to the predicted position
+                    local newAimDirection = Vector3.new(math.cos(angle), 0, math.sin(angle))
+                    local newAimPosition = HumanoidRootPart.Position + newAimDirection * 1000
+                    Mouse.Hit = RaycastParams.new({ Origin = HumanoidRootPart.Position, Direction = newAimDirection })
+                end
+            end
+        end
     end
 end
 
--- CombatEngine Function
-local function combat_engine(target)
+-- CombatEngine
+local function CombatEngine()
     if CombatEngineEnabled then
-        local distance = (target.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude
-        if distance <= CombatEngineRange then
-            local predicted_position = predict_position(target, CombatEngineSpeed)
-            local direction = (predicted_position - HumanoidRootPart.Position).Unit
-            local rotation = math.atan2(direction.X, direction.Z)
-            HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position, predicted_position)
-            -- Attack logic here
+        local closestEnemy = GetClosestEnemy()
+        if closestEnemy then
+            local enemyHumanoidRootPart = closestEnemy.Character:FindFirstChild("HumanoidRootPart")
+            if enemyHumanoidRootPart then
+                local distance = (HumanoidRootPart.Position - enemyHumanoidRootPart.Position).Magnitude
+                if distance <= CombatDistance then
+                    -- Attack the enemy
+                    local tool = Character:FindFirstChild("Tool")
+                    if tool then
+                        local animation = tool:FindFirstChild("Animation")
+                        if animation then
+                            animation:Play()
+                        end
+                    end
+                end
+            end
         end
     end
 end
 
 -- Main Loop
-while true do
-    -- Get nearest player
-    local nearest_player = nil
-    local nearest_distance = math.huge
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local distance = (player.Character.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude
-            if distance < nearest_distance then
-                nearest_distance = distance
-                nearest_player = player
-            end
-        end
-    end
+RunService.RenderStepped:Connect(function()
+    SilentAim()
+    CombatEngine()
+end)
 
-    -- SilentAim
-    if nearest_player then
-        silent_aim(nearest_player.Character)
+-- User Input
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.LeftControl then
+        SilentAimEnabled = not SilentAimEnabled
+    elseif input.KeyCode == Enum.KeyCode.LeftShift then
+        CombatEngineEnabled = not CombatEngineEnabled
     end
-
-    -- CombatEngine
-    if nearest_player then
-        combat_engine(nearest_player.Character)
-    end
-
-    -- Wait for next frame
-    RunService.RenderStepped:Wait()
-end
+end)
