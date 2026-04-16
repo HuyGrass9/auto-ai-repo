@@ -7,7 +7,7 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character
 local Humanoid = Character:WaitForChild("Humanoid")
-local Mouse = LocalPlayer:GetMouse()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
 -- SilentAim Variables
 local SilentAimEnabled = true
@@ -16,15 +16,14 @@ local SilentAimSpeed = 10
 
 -- CombatEngine Variables
 local CombatEngineEnabled = true
-local CombatEngineRange = 100
+local CombatEngineRange = 20
 local CombatEngineSpeed = 5
 
 -- Prediction Math
 local function predict_position(target, speed)
-    local direction = (target.Position - Character.HumanoidRootPart.Position).Unit
-    local distance = (target.Position - Character.HumanoidRootPart.Position).Magnitude
-    local travel_time = distance / speed
-    local predicted_position = target.Position + (target.Velocity * travel_time)
+    local direction = (target.HumanoidRootPart.Position - HumanoidRootPart.Position).Unit
+    local distance = (target.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude
+    local predicted_position = target.HumanoidRootPart.Position + direction * speed * (distance / 100)
     return predicted_position
 end
 
@@ -32,61 +31,51 @@ end
 local function silent_aim(target)
     if SilentAimEnabled then
         local predicted_position = predict_position(target, SilentAimSpeed)
-        local direction = (predicted_position - Character.HumanoidRootPart.Position).Unit
-        local rotation = math.atan2(-direction.Z, direction.X)
-        Mouse.Rotate = Vector2.new(rotation, 0)
+        local direction = (predicted_position - HumanoidRootPart.Position).Unit
+        local rotation = math.atan2(direction.X, direction.Z)
+        HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position, predicted_position)
     end
 end
 
 -- CombatEngine Function
 local function combat_engine(target)
     if CombatEngineEnabled then
-        local predicted_position = predict_position(target, CombatEngineSpeed)
-        local distance = (predicted_position - Character.HumanoidRootPart.Position).Magnitude
+        local distance = (target.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude
         if distance <= CombatEngineRange then
-            -- Attack target
-            local attack = Instance.new("RemoteEvent")
-            attack.Name = "Attack"
-            attack.Parent = Character
-            attack:FireServer(target)
+            local predicted_position = predict_position(target, CombatEngineSpeed)
+            local direction = (predicted_position - HumanoidRootPart.Position).Unit
+            local rotation = math.atan2(direction.X, direction.Z)
+            HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position, predicted_position)
+            -- Attack logic here
         end
     end
 end
 
 -- Main Loop
-game:GetService("RunService").RenderStepped:Connect(function()
-    -- Get nearest target
-    local nearest_target = nil
+while true do
+    -- Get nearest player
+    local nearest_player = nil
     local nearest_distance = math.huge
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local distance = (player.Character.HumanoidRootPart.Position - Character.HumanoidRootPart.Position).Magnitude
+        if player ~= LocalPlayer then
+            local distance = (player.Character.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude
             if distance < nearest_distance then
                 nearest_distance = distance
-                nearest_target = player.Character
+                nearest_player = player
             end
         end
     end
 
     -- SilentAim
-    if nearest_target then
-        silent_aim(nearest_target.HumanoidRootPart)
+    if nearest_player then
+        silent_aim(nearest_player.Character)
     end
 
     -- CombatEngine
-    if nearest_target then
-        combat_engine(nearest_target.HumanoidRootPart)
+    if nearest_player then
+        combat_engine(nearest_player.Character)
     end
-end)
 
--- Update prediction math
-local function update_prediction_math()
-    -- Update SilentAim speed
-    SilentAimSpeed = 15
-
-    -- Update CombatEngine speed
-    CombatEngineSpeed = 10
+    -- Wait for next frame
+    RunService.RenderStepped:Wait()
 end
-
--- Update script
-update_prediction_math()
