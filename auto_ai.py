@@ -1,5 +1,6 @@
 import requests
 import os
+import time
 from git import Repo
 
 # --- CONFIGURATION ---
@@ -11,64 +12,54 @@ def call_groq_api():
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
     
-    # SỬ DỤNG SIÊU PROMPT TỪ KINH NGHIỆM PHÁT TRIỂN CỦA BRO
-    system_prompt = """You are a senior Roblox Lua developer with deep expertise in mobile-optimized exploit scripting for Delta X executor. 
-    Your task is to build a Blox Fruits PvP Macro from scratch based on the provided specifications.
-    
-    ## CORE SPECIFICATIONS:
-    1. Executor: Delta X (Mobile). Use gethui(), task.spawn, task.wait.
-    2. Architecture: Modular (Config, UI, CombatEngine, SilentAim, Visuals, LagFixer, FakeLag, Utils).
-    3. Combat: Tool detection types 1-4, ExecuteCombo logic with switch-case, Stun/Busy state checks.
-    4. SilentAim: __namecall hook, target nearest enemy, override Vector3/CFrame arguments.
-    5. Visuals: BillboardGui ESP, Beam Tracer, FOV Changer.
-    6. LagFixer: Particle reduction, effect disabling, smooth plastic materials.
-    7. FakeLag: SetNetworkOwner(nil) at 10Hz.
-    8. UI: MaruUI style, draggable, mobile-friendly sliders and toggles.
-    
-    OUTPUT: Return ONLY the full, production-ready Lua code. No markdown, no chat."""
+    # Sử dụng Siêu Prompt từ kinh nghiệm của bro
+    system_prompt = """You are a senior Roblox Lua developer. 
+    Build/Refine MayChemXeoCan V2 based on the technical specs.
+    Focus on making the SilentAim and CombatEngine more aggressive and precise.
+    OUTPUT: Return ONLY raw Lua code."""
 
     data = {
         "model": MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": "Follow the 'MayChemXeoCan V2' full technical specifications and generate the complete script now."}
+            {"role": "user", "content": "Analyze the current trends in Roblox DeltaX Blox Fruit PvP and update the script to be even more powerful. Optimize the prediction math."}
         ],
-        "temperature": 0.2, # Độ chính xác tuyệt đối theo specs
-        "max_tokens": 8192
+        "temperature": 0.3,
+        "max_tokens": 8000
     }
 
     try:
-        print("🛠️ AI đang đúc kết kinh nghiệm và xây dựng V2 theo Spec chuẩn...")
         response = requests.post(url, headers=headers, json=data, timeout=300)
         if response.status_code == 200:
             return response.json()['choices'][0]['message']['content'].replace("```lua", "").replace("```", "").strip()
-        else:
-            print(f"❌ API Error: {response.status_code}")
     except Exception as e:
         print(f"❌ Error: {e}")
     return None
 
 def main():
-    # Xóa trắng file cũ để AI tự do sáng tạo bản V2
-    if os.path.exists(FILE_PATH):
-        open(FILE_PATH, 'w').close()
-
-    new_script = call_groq_api()
-
-    if new_script:
-        with open(FILE_PATH, "w", encoding="utf-8") as f:
-            f.write(new_script)
-        print("✅ SIÊU PHẨM V2 ĐÃ HOÀN THÀNH DỰA TRÊN SPEC!")
+    iteration = 1
+    while True: # VÒNG LẶP VÔ HẠN
+        print(f"\n🚀 BẮT ĐẦU ĐỢT TIẾN HÓA THỨ {iteration}...")
         
-        try:
-            repo = Repo(".")
-            repo.git.add(A=True)
-            repo.index.commit("Production: MayChemXeoCan V2 Build from Technical Specs")
-            repo.git.push('origin', repo.active_branch.name)
-            print("🚀 ĐÃ PUSH BẢN V2 LÊN GITHUB!")
-        except Exception as e:
-            print(f"⚠️ Push Error: {e}")
+        new_script = call_groq_api()
+
+        if new_script and len(new_script) > 1000:
+            with open(FILE_PATH, "w", encoding="utf-8") as f:
+                f.write(new_script)
+            print(f"✅ Đợt {iteration}: Đã cập nhật xong code mới.")
+            
+            try:
+                repo = Repo(".")
+                repo.git.add(A=True)
+                repo.index.commit(f"Evolution Cycle {iteration}: Auto-Refinement")
+                repo.git.push('origin', repo.active_branch.name)
+                print(f"🔥 Đã Push đợt {iteration} lên GitHub thành công!")
+            except Exception as e:
+                print(f"⚠️ Git Error: {e}")
+        
+        print(f"💤 Nghỉ 5 phút để tránh nghẽn API, sau đó sẽ tiếp tục...")
+        time.sleep(300) # Nghỉ 5 phút giữa các đợt update
+        iteration += 1
 
 if __name__ == "__main__":
     main()
-    
