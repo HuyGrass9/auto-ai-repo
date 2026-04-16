@@ -9,81 +9,84 @@ local Character = LocalPlayer.Character
 local Humanoid = Character:WaitForChild("Humanoid")
 local Mouse = LocalPlayer:GetMouse()
 
--- Silent Aim
-local SilentAimSettings = {
-    Prediction = 0.15,
-    FOV = 50,
-    Smoothness = 5,
-}
+-- SilentAim Variables
+local SilentAimEnabled = true
+local SilentAimFOV = 50
+local SilentAimSpeed = 10
 
--- Combat Engine
-local CombatEngineSettings = {
-    AttackSpeed = 0.1,
-    AttackRange = 10,
-    Damage = 100,
-}
+-- CombatEngine Variables
+local CombatEngineEnabled = true
+local CombatEngineRange = 100
+local CombatEngineSpeed = 5
 
--- Functions
-local function GetClosestEnemy()
-    local closestEnemy = nil
-    local closestDistance = math.huge
+-- Prediction Math
+local function predict_position(target, speed)
+    local direction = (target.Position - Character.HumanoidRootPart.Position).Unit
+    local distance = (target.Position - Character.HumanoidRootPart.Position).Magnitude
+    local travel_time = distance / speed
+    local predicted_position = target.Position + (target.Velocity * travel_time)
+    return predicted_position
+end
 
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local distance = (Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-            if distance < closestDistance then
-                closestEnemy = player
-                closestDistance = distance
-            end
+-- SilentAim Function
+local function silent_aim(target)
+    if SilentAimEnabled then
+        local predicted_position = predict_position(target, SilentAimSpeed)
+        local direction = (predicted_position - Character.HumanoidRootPart.Position).Unit
+        local rotation = math.atan2(-direction.Z, direction.X)
+        Mouse.Rotate = Vector2.new(rotation, 0)
+    end
+end
+
+-- CombatEngine Function
+local function combat_engine(target)
+    if CombatEngineEnabled then
+        local predicted_position = predict_position(target, CombatEngineSpeed)
+        local distance = (predicted_position - Character.HumanoidRootPart.Position).Magnitude
+        if distance <= CombatEngineRange then
+            -- Attack target
+            local attack = Instance.new("RemoteEvent")
+            attack.Name = "Attack"
+            attack.Parent = Character
+            attack:FireServer(target)
         end
     end
-
-    return closestEnemy
-end
-
-local function GetPrediction(enemy)
-    local prediction = SilentAimSettings.Prediction
-    local velocity = enemy.Character.HumanoidRootPart.Velocity
-    local direction = (enemy.Character.HumanoidRootPart.Position - Character.HumanoidRootPart.Position).Unit
-    local predictedPosition = enemy.Character.HumanoidRootPart.Position + velocity * prediction
-
-    return predictedPosition
-end
-
-local function IsInFOV(position)
-    local fov = SilentAimSettings.FOV
-    local direction = (position - Character.HumanoidRootPart.Position).Unit
-    local angle = math.acos(direction:Dot(Mouse.Unit))
-
-    return angle <= math.rad(fov / 2)
 end
 
 -- Main Loop
-RunService.RenderStepped:Connect(function()
-    local closestEnemy = GetClosestEnemy()
-    if closestEnemy and closestEnemy.Character then
-        local predictedPosition = GetPrediction(closestEnemy)
-        if IsInFOV(predictedPosition) then
-            -- Aim at predicted position
-            Mouse.Target = predictedPosition
-
-            -- Attack if in range
-            if (Character.HumanoidRootPart.Position - predictedPosition).Magnitude <= CombatEngineSettings.AttackRange then
-                -- Attack logic here
+game:GetService("RunService").RenderStepped:Connect(function()
+    -- Get nearest target
+    local nearest_target = nil
+    local nearest_distance = math.huge
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local distance = (player.Character.HumanoidRootPart.Position - Character.HumanoidRootPart.Position).Magnitude
+            if distance < nearest_distance then
+                nearest_distance = distance
+                nearest_target = player.Character
             end
         end
     end
+
+    -- SilentAim
+    if nearest_target then
+        silent_aim(nearest_target.HumanoidRootPart)
+    end
+
+    -- CombatEngine
+    if nearest_target then
+        combat_engine(nearest_target.HumanoidRootPart)
+    end
 end)
 
--- Optimization
-local function OptimizePrediction()
-    local prediction = SilentAimSettings.Prediction
-    local velocity = Character.HumanoidRootPart.Velocity
-    local direction = (Character.HumanoidRootPart.Position - Mouse.Target).Unit
-    local optimizedPrediction = prediction + (velocity.Magnitude / 100) * (direction:Dot(velocity.Unit))
+-- Update prediction math
+local function update_prediction_math()
+    -- Update SilentAim speed
+    SilentAimSpeed = 15
 
-    return optimizedPrediction
+    -- Update CombatEngine speed
+    CombatEngineSpeed = 10
 end
 
--- Update prediction math
-SilentAimSettings.Prediction = OptimizePrediction()
+-- Update script
+update_prediction_math()
