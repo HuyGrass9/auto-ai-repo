@@ -2,71 +2,72 @@ import requests
 import os
 from git import Repo
 
-# --- CONFIGURATION ---
 GROQ_API_KEY = "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"
 FILE_PATH = "main.py"
 MODEL = "llama-3.3-70b-versatile"
 
-def call_groq_api(full_code):
+def call_groq_api():
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
     
-    system_prompt = """You are a Master Lua Developer. 
-    Your task is to REWRITE and OPTIMIZE the ENTIRE script provided.
-    - Improve every single function for maximum mobile performance (DeltaX).
-    - Ensure the logic for combos, tracking, and UI is flawless.
-    - Implement professional coding patterns and ping-aware delays.
-    - Output ONLY the full, complete Lua code. No chat, no markdown."""
+    # ĐÂY LÀ PHẦN QUAN TRỌNG NHẤT: PROMPT KHỞI TẠO SIÊU CẤP
+    system_prompt = """You are a God-tier Lua Scripter for Roblox Blox Fruit.
+TASK: Create a COMPLETELY NEW, high-performance Auto Bounty script named 'MayChemXeoCan V2'.
+
+CORE ARCHITECTURE TO IMPLEMENT:
+1. Advanced Combat: 
+   - Perfect HumanoidRootPart (HRP) Prediction for moving targets.
+   - Ultra-fast Skill Cycle (Z, X, C, V) using VirtualInputManager.
+   - Smart Slot Swapping (Keys 1, 2, 3, 4) for Melee, Sword, and Fruit.
+2. Movement: 
+   - Smooth 'Safe Tween' system to bypass anti-cheat detections.
+   - Auto-distance maintainer (keeps 5-10 studs from target).
+3. Optimization:
+   - Dynamic Delay: Adjusts wait times based on game Ping.
+   - 60 FPS Focus: Use task.wait() and avoid heavy loops.
+4. Learning Mechanism: 
+   - Add a 'Self-Correction' module that checks if a skill hits; if not, adjust prediction.
+
+OUTPUT: Return ONLY the full, clean Lua code. No markdown, no explanations."""
 
     data = {
         "model": MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Refactor this entire script for God-tier performance:\n\n{full_code}"}
+            {"role": "user", "content": "Create the MayChemXeoCan V2 script from scratch. Make it the most powerful and intelligent Auto Bounty script ever made."}
         ],
-        "temperature": 0.2,
-        "max_tokens": 32768 
+        "temperature": 0.3,
+        "max_tokens": 8000
     }
 
     try:
-        # TĂNG TIMEOUT LÊN 10 PHÚT (600 GIÂY)
-        print("⏳ AI đang suy nghĩ cực sâu... Có thể mất vài phút, bro đừng tắt máy nhé...")
-        response = requests.post(url, headers=headers, json=data, timeout=600)
-        
+        print("🤖 AI đang tự tay xây dựng 'Máy Chém Xéo Cần V2' từ con số 0...")
+        response = requests.post(url, headers=headers, json=data, timeout=300)
         if response.status_code == 200:
-            content = response.json()['choices'][0]['message']['content']
-            return content.replace("```lua", "").replace("```", "").strip()
-        else:
-            print(f"❌ API Error: {response.status_code} - {response.text}")
+            return response.json()['choices'][0]['message']['content'].replace("```lua", "").replace("```", "").strip()
     except Exception as e:
-        print(f"❌ Lỗi: Có thể do file quá dài hoặc kết nối bị ngắt. Chi tiết: {e}")
+        print(f"❌ Error: {e}")
     return None
 
 def main():
-    if not os.path.exists(FILE_PATH): return
+    # XÓA CODE CŨ TRƯỚC KHI TẠO MỚI
+    print("🧹 Đang dọn dẹp code cũ...")
+    new_script = call_groq_api()
 
-    with open(FILE_PATH, "r", encoding="utf-8") as f:
-        full_code = f.read()
-
-    print(f"🤖 Đang tiến hóa TOÀN BỘ code ({len(full_code)} ký tự)...")
-    optimized_code = call_groq_api(full_code)
-
-    if optimized_code and len(optimized_code) > 500:
+    if new_script:
         with open(FILE_PATH, "w", encoding="utf-8") as f:
-            f.write(optimized_code)
-        print("✅ TIẾN HÓA XONG! Đang đẩy lên GitHub...")
+            f.write(new_script)
+        print("✅ ĐÃ TẠO XONG BẢN V2 SIÊU CẤP!")
         
         try:
             repo = Repo(".")
             repo.git.add(A=True)
-            repo.index.commit("AI Master: 10-minute deep optimization")
+            repo.index.commit("Initial Build: MayChemXeoCan V2 - God Mode")
             repo.git.push('origin', repo.active_branch.name)
-            print("🚀 ĐÃ PUSH LÊN GITHUB!")
-        except Exception as e:
-            print(f"⚠️ Git Error: {e}")
-    else:
-        print("💀 AI không thể hoàn thành bản nâng cấp (File quá lớn hoặc cạn Token).")
+            print("🚀 ĐÃ PUSH SIÊU PHẨM LÊN GITHUB!")
+        except:
+            print("⚠️ Push lỗi, nhưng code đã nằm trong main.py.")
 
 if __name__ == "__main__":
     main()
-            
+    
