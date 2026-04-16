@@ -1,150 +1,245 @@
--- MayChemXeoCan V2
--- Auto Bounty Script
+-- Config
+local Config = {
+    -- Combat Settings
+    Combat = {
+        ToolDetection = {
+            Type1 = true,
+            Type2 = true,
+            Type3 = true,
+            Type4 = true,
+        },
+        Combo = {
+            SwitchCase = true,
+            StunCheck = true,
+            BusyCheck = true,
+        },
+    },
+    -- Silent Aim Settings
+    SilentAim = {
+        Enabled = true,
+        NearestEnemy = true,
+        OverrideVector3 = true,
+        OverrideCFrame = true,
+    },
+    -- Visuals Settings
+    Visuals = {
+        ESP = true,
+        BeamTracer = true,
+        FOVChanger = true,
+    },
+    -- Lag Fixer Settings
+    LagFixer = {
+        ParticleReduction = true,
+        EffectDisabling = true,
+        SmoothPlasticMaterials = true,
+    },
+    -- Fake Lag Settings
+    FakeLag = {
+        Enabled = true,
+        Frequency = 10,
+    },
+    -- UI Settings
+    UI = {
+        Style = "MaruUI",
+        Draggable = true,
+        MobileFriendly = true,
+    },
+}
 
--- Services
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+-- UI
+local UI = {}
+local MaruUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/MaruXiaoXiao/MaruUI/main/MaruUI.lua"))()
+local Window = MaruUI.new("Blox Fruits PvP Macro")
+local Tab = Window:Tab("Combat")
+local Section = Tab:Section("Combat Settings")
 
--- Variables
-local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character
-local Humanoid = Character:WaitForChild("Humanoid")
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-local BountyTarget = nil
-local BountyTargetHRP = nil
-local CurrentSkill = "Z"
-local CurrentSlot = 1
-local Ping = 0
-local LastPing = 0
-local DynamicDelay = 0
+-- Combat Engine
+local CombatEngine = {}
+CombatEngine.ToolDetection = {
+    Type1 = function()
+        -- Tool detection type 1 logic
+    end,
+    Type2 = function()
+        -- Tool detection type 2 logic
+    end,
+    Type3 = function()
+        -- Tool detection type 3 logic
+    end,
+    Type4 = function()
+        -- Tool detection type 4 logic
+    end,
+}
+CombatEngine.ExecuteCombo = function()
+    -- Execute combo logic with switch-case
+    local switch = {
+        [1] = function()
+            -- Combo 1 logic
+        end,
+        [2] = function()
+            -- Combo 2 logic
+        end,
+        [3] = function()
+            -- Combo 3 logic
+        end,
+    }
+    local case = 1
+    switch[case]()
+end
+CombatEngine.StunCheck = function()
+    -- Stun check logic
+end
+CombatEngine.BusyCheck = function()
+    -- Busy check logic
+end
 
--- Functions
-local function GetBountyTarget()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local distance = (HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-            if distance <= 50 then
-                return player
-            end
-        end
+-- Silent Aim
+local SilentAim = {}
+SilentAim.__namecall = function(self, ...)
+    -- __namecall hook logic
+    local args = {...}
+    if args[1] == "FireServer" then
+        -- Override Vector3/CFrame arguments
+        args[2] = Vector3.new(0, 0, 0)
+        args[3] = CFrame.new(0, 0, 0)
     end
-    return nil
+    return self.__namecall(self, unpack(args))
+end
+SilentAim.TargetNearestEnemy = function()
+    -- Target nearest enemy logic
+end
+SilentAim.OverrideVector3 = function()
+    -- Override Vector3 logic
+end
+SilentAim.OverrideCFrame = function()
+    -- Override CFrame logic
 end
 
-local function GetPredictedPosition(hrp, velocity, time)
-    return hrp.Position + velocity * time
+-- Visuals
+local Visuals = {}
+Visuals.BillboardGuiESP = function()
+    -- BillboardGui ESP logic
+end
+Visuals.BeamTracer = function()
+    -- Beam tracer logic
+end
+Visuals.FOVChanger = function()
+    -- FOV changer logic
 end
 
-local function SmoothTween(part, targetPosition, time)
-    local startPosition = part.Position
-    local elapsed = 0
-    while elapsed < time do
-        local newPosition = startPosition + (targetPosition - startPosition) * (elapsed / time)
-        part.CFrame = CFrame.new(newPosition)
-        elapsed = elapsed + 0.01
-        task.wait(0.01)
-    end
+-- Lag Fixer
+local LagFixer = {}
+LagFixer.ParticleReduction = function()
+    -- Particle reduction logic
+end
+LagFixer.EffectDisabling = function()
+    -- Effect disabling logic
+end
+LagFixer.SmoothPlasticMaterials = function()
+    -- Smooth plastic materials logic
 end
 
-local function MaintainDistance(targetHrp)
-    local distance = (HumanoidRootPart.Position - targetHrp.Position).Magnitude
-    if distance > 10 then
-        local direction = (targetHrp.Position - HumanoidRootPart.Position).Unit
-        SmoothTween(HumanoidRootPart, HumanoidRootPart.Position + direction * (distance - 10), 0.5)
-    elseif distance < 5 then
-        local direction = (HumanoidRootPart.Position - targetHrp.Position).Unit
-        SmoothTween(HumanoidRootPart, HumanoidRootPart.Position + direction * (5 - distance), 0.5)
-    end
+-- Fake Lag
+local FakeLag = {}
+FakeLag.SetNetworkOwner = function()
+    -- Set network owner logic
 end
+FakeLag.Frequency = 10
 
-local function UpdatePing()
-    LastPing = Ping
-    Ping = game:GetService("Stats").Network.ServerStatsItem["DataPing"]:GetValue()
-    DynamicDelay = math.max(0.05, Ping / 1000)
+-- Utils
+local Utils = {}
+Utils.gethui = function()
+    -- gethui logic
 end
-
-local function SelfCorrection(skill, targetHrp)
-    local predictedPosition = GetPredictedPosition(targetHrp, targetHrp.Velocity, DynamicDelay)
-    local actualPosition = targetHrp.Position
-    local distance = (predictedPosition - actualPosition).Magnitude
-    if distance > 1 then
-        -- Adjust prediction
-        print("Self-Correction: Adjusting prediction for " .. skill)
-    end
+Utils.task = {}
+Utils.task.spawn = function(func)
+    -- task.spawn logic
+    spawn(func)
+end
+Utils.task.wait = function(time)
+    -- task.wait logic
+    wait(time)
 end
 
 -- Main Loop
-while task.wait(DynamicDelay) do
-    -- Update Ping
-    UpdatePing()
+while true do
+    -- Update UI
+    Section:Toggle("Tool Detection Type 1", Config.Combat.ToolDetection.Type1)
+    Section:Toggle("Tool Detection Type 2", Config.Combat.ToolDetection.Type2)
+    Section:Toggle("Tool Detection Type 3", Config.Combat.ToolDetection.Type3)
+    Section:Toggle("Tool Detection Type 4", Config.Combat.ToolDetection.Type4)
+    Section:Toggle("Combo Switch-Case", Config.Combat.Combo.SwitchCase)
+    Section:Toggle("Stun Check", Config.Combat.Combo.StunCheck)
+    Section:Toggle("Busy Check", Config.Combat.Combo.BusyCheck)
 
-    -- Get Bounty Target
-    if not BountyTarget or not BountyTarget.Character or not BountyTarget.Character:FindFirstChild("HumanoidRootPart") then
-        BountyTarget = GetBountyTarget()
-        if BountyTarget then
-            BountyTargetHRP = BountyTarget.Character:WaitForChild("HumanoidRootPart")
-        end
+    -- Update Combat Engine
+    if Config.Combat.ToolDetection.Type1 then
+        CombatEngine.ToolDetection.Type1()
+    end
+    if Config.Combat.ToolDetection.Type2 then
+        CombatEngine.ToolDetection.Type2()
+    end
+    if Config.Combat.ToolDetection.Type3 then
+        CombatEngine.ToolDetection.Type3()
+    end
+    if Config.Combat.ToolDetection.Type4 then
+        CombatEngine.ToolDetection.Type4()
+    end
+    if Config.Combat.Combo.SwitchCase then
+        CombatEngine.ExecuteCombo()
+    end
+    if Config.Combat.Combo.StunCheck then
+        CombatEngine.StunCheck()
+    end
+    if Config.Combat.Combo.BusyCheck then
+        CombatEngine.BusyCheck()
     end
 
-    -- Maintain Distance
-    if BountyTargetHRP then
-        MaintainDistance(BountyTargetHRP)
+    -- Update Silent Aim
+    if Config.SilentAim.Enabled then
+        SilentAim.__namecall(game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest)
+    end
+    if Config.SilentAim.NearestEnemy then
+        SilentAim.TargetNearestEnemy()
+    end
+    if Config.SilentAim.OverrideVector3 then
+        SilentAim.OverrideVector3()
+    end
+    if Config.SilentAim.OverrideCFrame then
+        SilentAim.OverrideCFrame()
     end
 
-    -- Combat
-    if BountyTargetHRP then
-        -- Predict Target Position
-        local predictedPosition = GetPredictedPosition(BountyTargetHRP, BountyTargetHRP.Velocity, DynamicDelay)
-
-        -- Skill Cycle
-        if CurrentSkill == "Z" then
-            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Z)
-            task.wait(DynamicDelay)
-            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Z)
-            CurrentSkill = "X"
-        elseif CurrentSkill == "X" then
-            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.X)
-            task.wait(DynamicDelay)
-            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.X)
-            CurrentSkill = "C"
-        elseif CurrentSkill == "C" then
-            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.C)
-            task.wait(DynamicDelay)
-            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.C)
-            CurrentSkill = "V"
-        elseif CurrentSkill == "V" then
-            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.V)
-            task.wait(DynamicDelay)
-            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.V)
-            CurrentSkill = "Z"
-        end
-
-        -- Slot Swapping
-        if CurrentSlot == 1 then
-            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.One)
-            task.wait(DynamicDelay)
-            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.One)
-            CurrentSlot = 2
-        elseif CurrentSlot == 2 then
-            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Two)
-            task.wait(DynamicDelay)
-            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Two)
-            CurrentSlot = 3
-        elseif CurrentSlot == 3 then
-            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Three)
-            task.wait(DynamicDelay)
-            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Three)
-            CurrentSlot = 4
-        elseif CurrentSlot == 4 then
-            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Four)
-            task.wait(DynamicDelay)
-            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Four)
-            CurrentSlot = 1
-        end
-
-        -- Self-Correction
-        SelfCorrection(CurrentSkill, BountyTargetHRP)
+    -- Update Visuals
+    if Config.Visuals.ESP then
+        Visuals.BillboardGuiESP()
     end
+    if Config.Visuals.BeamTracer then
+        Visuals.BeamTracer()
+    end
+    if Config.Visuals.FOVChanger then
+        Visuals.FOVChanger()
+    end
+
+    -- Update Lag Fixer
+    if Config.LagFixer.ParticleReduction then
+        LagFixer.ParticleReduction()
+    end
+    if Config.LagFixer.EffectDisabling then
+        LagFixer.EffectDisabling()
+    end
+    if Config.LagFixer.SmoothPlasticMaterials then
+        LagFixer.SmoothPlasticMaterials()
+    end
+
+    -- Update Fake Lag
+    if Config.FakeLag.Enabled then
+        FakeLag.SetNetworkOwner(nil)
+        Utils.task.wait(1 / FakeLag.Frequency)
+    end
+
+    -- Update Utils
+    Utils.gethui()
+    Utils.task.spawn(function()
+        -- task.spawn logic
+    end)
+    Utils.task.wait(1)
 end
