@@ -362,42 +362,7 @@ function Combat.WaitForSkillActivation(tool, timeout)
         if activated then break end
         if Combat.CheckBusy(LP.Character) then activated = true; break end
         if s_find(MCXC.State.Status, "CANCEL") then break end
-        if Combat.IsSt
-                    failed = true; failReason = "SKILL NOT ACTIVATED"; break
-                end
-                VIM:SendKeyEvent(false, kc, false, game)
-                while Combat.CheckBusy(LP.Character) do task.wait() end
-                task.wait(0.05)
-            end
-        end
-        if failed then
-            MCXC.State.Status = "FAIL: " .. failReason
-            Utils.Tween(strUI, {Thickness=2.5, Color=Theme.Danger}, 0.1)
-            t_delay(0.5, function() Utils.Tween(strUI, {Thickness=1.5, Color=col}, 0.2) end)
-        else
-            MCXC.State.Status = "DONE: " .. comboId
-            Utils.Tween(strUI, {Thickness=1.5, Color=col}, 0.2)
-        end
-        MCXC.State.CurrentCombo = nil
-        MCXC.State.Status = "IDLE"
-        if onEnd then onEnd() end
-        if MCXC.State.ComboQueue then ProcessQueue() end
-    end)
-end
-
-local Visuals = {}
-function Visuals.UpdateTracer(tR, myR, color)
-    if not MCXC.Cache.TracerLine or not MCXC.Cache.TracerLine.Beam.Parent then
-        local a1, a2, b = I_new("Attachment"), I_new("Attachment"), I_new("Beam")
-        a1.Name = "A1_"..MCXC.State.SessionID; a2.Name = "A2_"..MCXC.State.SessionID; b.Name = "Tracer_"..MCXC.State.SessionID
-        b.Attachment0, b.Attachment1, b.FaceCamera, b.Width0, b.Width1, b.Transparency = a1, a2, true, 0.8, 0.8, NS(0.1)
-        MCXC.Cache.TracerLine = {Beam = b, A1 = a1, A2 = a2}
-    end
-    local tr = MCXC.Cache.TracerLine
-    tr.A1.Parent, tr.A2.Parent, tr.Beam.Parent = myR, tR, tR
-    tr.Beam.Color, tr.Beam.Enabled = CS(color or Theme.Target), true
-end
-function Visuals.ClearTracer()
+        t_wait(0
     if MCXC.Cache.TracerLine and MCXC.Cache.TracerLine.Beam then
         MCXC.Cache.TracerLine.Beam.Enabled = false
     end
