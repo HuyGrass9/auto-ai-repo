@@ -80,19 +80,29 @@ Plyrs.PlayerAdded:Connect(function(p) ManagePlayer(p) end)
 Plyrs.PlayerRemoving:Connect(function(p) ManagePlayer(p, true) end)
 
 local Utils = {}
-function Utils.DistSq(p1,p2) local dx=p1.X-p2.X; local dy=p1.Y-p2.Y; local dz=p1.Z-p2.Z; return dx*dx+dy*dy+dz*dz end
+function Utils.DistSq(p1,p2) 
+    local dx=p1.X-p2.X; 
+    local dy=p1.Y-p2.Y; 
+    local dz=p1.Z-p2.Z; 
+    return dx*dx+dy*dy+dz*dz 
+end
 function Utils.Tween(obj, props, time)
     local tw = TS:Create(obj, TweenInfo.new(time or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props)
-    tw:Play(); return tw
+    tw:Play(); 
+    return tw
 end
 function Utils.GetPing()
-    local p=0; pcall(function() p=St.Network.ServerStatsItem["Data Ping"]:GetValue() end); return p
+    local p=0; 
+    pcall(function() p=St.Network.ServerStatsItem["Data Ping"]:GetValue() end); 
+    return p
 end
 function Utils.MakeDraggable(topbar, object)
     local dragging, dragInput, dragStart, startPos
     topbar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true; dragStart = input.Position; startPos = object.Position
+            dragging = true; 
+            dragStart = input.Position; 
+            startPos = object.Position
             input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging=false end end)
         end
     end)
@@ -261,7 +271,7 @@ function Combat.IsStunned(char)
 end
 function Combat.WaitForStunEnd(char)
     while Combat.IsStunned(char) do
-        task.wait(0.05)
+        t_wait(0.05)
     end
 end
 
@@ -324,18 +334,18 @@ function Combat.SwitchToTool(key)
                 conn:Disconnect()
                 return true
             end
-            task.wait()
+            t_wait()
         until t_tick() - start > 2.5
         conn:Disconnect()
     end
     local kc = key == "2" and Enum.KeyCode.Two or key == "3" and Enum.KeyCode.Three or key == "4" and Enum.KeyCode.Four or Enum.KeyCode.One
     VIM:SendKeyEvent(true, kc, false, game)
-    task.wait(0.05)
+    t_wait(0.05)
     VIM:SendKeyEvent(false, kc, false, game)
     local start = t_tick()
     repeat
         if GetCurrentToolType() == key then return true end
-        task.wait()
+        t_wait()
     until t_tick() - start > 1.8
     return false
 end
@@ -352,52 +362,7 @@ function Combat.WaitForSkillActivation(tool, timeout)
         if activated then break end
         if Combat.CheckBusy(LP.Character) then activated = true; break end
         if s_find(MCXC.State.Status, "CANCEL") then break end
-        if Combat.IsStunned(LP.Character) then break end
-        task.wait()
-    until t_tick() - start > timeout
-    conn:Disconnect()
-    return activated
-end
-
-local function FastCastManual(kc)
-    if not MCXC.Config.Macro or s_find(MCXC.State.Status, "CASTING") then return end
-    t_spawn(function()
-        if Combat.IsStunned(LP.Character) or Combat.CheckBusy(LP.Character) then return end
-        VIM:SendKeyEvent(true, kc, false, game)
-        task.wait()
-        VIM:SendKeyEvent(false, kc, false, game)
-    end)
-end
-UIS.InputBegan:Connect(function(i, p) if not p and s_match(i.KeyCode.Name, "[ZXCVF]") then FastCastManual(i.KeyCode) end end)
-
-function Combat.ExecuteCombo(comboId, comboStr, strUI, col, onEnd)
-    if s_find(MCXC.State.Status, "CASTING") then return end
-    MCXC.State.Status = "CASTING: " .. comboId
-    MCXC.State.CurrentCombo = comboId
-    t_spawn(function()
-        local seq = s_upper(comboStr)
-        local failed, failReason = false, ""
-        Utils.Tween(strUI, {Thickness=2.5, Color=Theme.Text}, 0.05)
-        for step = 1, #seq do
-            if Combat.IsStunned(LP.Character) then
-                MCXC.State.Status = "STUNNED - WAIT"
-                Combat.WaitForStunEnd(LP.Character)
-            end
-            if s_find(MCXC.State.Status, "CANCEL") then failed = true; failReason = "CANCELLED"; break end
-            local key = s_sub(seq, step, step)
-            if s_match(key, "[1-4]") then
-                if not Combat.SwitchToTool(key) then
-                    failed = true; failReason = "TOOL SWITCH FAIL"; break
-                end
-                task.wait(0.05)
-            elseif s_match(key, "[ZXCVF]") then
-                MCXC.State.Status = "CASTING " .. comboId .. ": [" .. key .. "]"
-                local kc = Enum.KeyCode[key]
-                local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
-                if not tool then failed = true; failReason = "NO TOOL"; break end
-                VIM:SendKeyEvent(true, kc, false, game)
-                if not Combat.WaitForSkillActivation(tool, 1.5) then
-                    VIM:SendKeyEvent(false, kc, false, game)
+        if Combat.IsSt
                     failed = true; failReason = "SKILL NOT ACTIVATED"; break
                 end
                 VIM:SendKeyEvent(false, kc, false, game)
