@@ -7,63 +7,83 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character
 local Humanoid = Character:WaitForChild("Humanoid")
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Mouse = LocalPlayer:GetMouse()
 
--- SilentAim Variables
-local SilentAimEnabled = true
-local SilentAimFOV = 50
-local SilentAimSpeed = 10
+-- Silent Aim
+local SilentAimSettings = {
+    Prediction = 0.15,
+    FOV = 50,
+    Smoothness = 5,
+}
 
--- CombatEngine Variables
-local CombatEngineEnabled = true
-local CombatEngineRange = 50
-local CombatEngineSpeed = 10
+-- Combat Engine
+local CombatEngineSettings = {
+    AttackSpeed = 0.1,
+    AttackRange = 10,
+    Damage = 100,
+}
 
--- Prediction Math
-local function predict_position(target)
-    local velocity = target.HumanoidRootPart.Velocity
-    local direction = (target.HumanoidRootPart.Position - HumanoidRootPart.Position).Unit
-    local distance = (target.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude
-    local travel_time = distance / SilentAimSpeed
-    local predicted_position = target.HumanoidRootPart.Position + velocity * travel_time
-    return predicted_position
-end
+-- Functions
+local function GetClosestEnemy()
+    local closestEnemy = nil
+    local closestDistance = math.huge
 
--- SilentAim Function
-local function silent_aim(target)
-    if SilentAimEnabled then
-        local predicted_position = predict_position(target)
-        local direction = (predicted_position - HumanoidRootPart.Position).Unit
-        local rotation = math.atan2(direction.X, direction.Z)
-        HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position, predicted_position)
-    end
-end
-
--- CombatEngine Function
-local function combat_engine(target)
-    if CombatEngineEnabled then
-        local distance = (target.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude
-        if distance <= CombatEngineRange then
-            silent_aim(target)
-            -- Attack logic here
-        end
-    end
-end
-
--- Loop
-while wait() do
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local character = player.Character
-            if character then
-                local humanoid = character:FindFirstChild("Humanoid")
-                if humanoid then
-                    local humanoid_root_part = character:FindFirstChild("HumanoidRootPart")
-                    if humanoid_root_part then
-                        combat_engine(humanoid_root_part)
-                    end
-                end
+        if player ~= LocalPlayer and player.Character then
+            local distance = (Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+            if distance < closestDistance then
+                closestEnemy = player
+                closestDistance = distance
             end
         end
     end
+
+    return closestEnemy
 end
+
+local function GetPrediction(enemy)
+    local prediction = SilentAimSettings.Prediction
+    local velocity = enemy.Character.HumanoidRootPart.Velocity
+    local direction = (enemy.Character.HumanoidRootPart.Position - Character.HumanoidRootPart.Position).Unit
+    local predictedPosition = enemy.Character.HumanoidRootPart.Position + velocity * prediction
+
+    return predictedPosition
+end
+
+local function IsInFOV(position)
+    local fov = SilentAimSettings.FOV
+    local direction = (position - Character.HumanoidRootPart.Position).Unit
+    local angle = math.acos(direction:Dot(Mouse.Unit))
+
+    return angle <= math.rad(fov / 2)
+end
+
+-- Main Loop
+RunService.RenderStepped:Connect(function()
+    local closestEnemy = GetClosestEnemy()
+    if closestEnemy and closestEnemy.Character then
+        local predictedPosition = GetPrediction(closestEnemy)
+        if IsInFOV(predictedPosition) then
+            -- Aim at predicted position
+            Mouse.Target = predictedPosition
+
+            -- Attack if in range
+            if (Character.HumanoidRootPart.Position - predictedPosition).Magnitude <= CombatEngineSettings.AttackRange then
+                -- Attack logic here
+            end
+        end
+    end
+end)
+
+-- Optimization
+local function OptimizePrediction()
+    local prediction = SilentAimSettings.Prediction
+    local velocity = Character.HumanoidRootPart.Velocity
+    local direction = (Character.HumanoidRootPart.Position - Mouse.Target).Unit
+    local optimizedPrediction = prediction + (velocity.Magnitude / 100) * (direction:Dot(velocity.Unit))
+
+    return optimizedPrediction
+end
+
+-- Update prediction math
+SilentAimSettings.Prediction = OptimizePrediction()
