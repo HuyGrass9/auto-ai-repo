@@ -363,41 +363,6 @@ function Combat.WaitForSkillActivation(tool, timeout)
         if Combat.CheckBusy(LP.Character) then activated = true; break end
         if s_find(MCXC.State.Status, "CANCEL") then break end
         t_wait(0
-    if MCXC.Cache.TracerLine and MCXC.Cache.TracerLine.Beam then
-        MCXC.Cache.TracerLine.Beam.Enabled = false
-    end
-end
-
-local function IsAlly(p)
-    if p == LP then return true end
-    local lpTeam = LP.Team and s_lower(LP.Team.Name)
-    local pTeam = p.Team and s_lower(p.Team.Name)
-    if lpTeam == "marines" then return pTeam == "marines" end
-    if lpTeam == "pirates" then
-        if pTeam ~= "pirates" then return false end
-        local lpCrew = LP:FindFirstChild("Data") and LP.Data:FindFirstChild("Crew") and LP.Data.Crew.Value
-        local pCrew = p:FindFirstChild("Data") and p.Data:FindFirstChild("Crew") and p.Data.Crew.Value
-        if lpCrew and pCrew and lpCrew == pCrew then return true end
-        return p:GetAttribute("Ally") == true or p:FindFirstChild("Ally") ~= nil
-    end
-    return false
-end
-
-function Visuals.UpdateESP(p, tR, dSq, isTarget, hp, mhp, lvl, bounty)
-    if not tR or not tR:IsDescendantOf(workspace) or dSq > MCXC.Config.RenderDist*MCXC.Config.RenderDist or not MCXC.Config.ESP then
-        if MCXC.Cache.ESP[p.Name] then MCXC.Cache.ESP[p.Name].Enabled = false end
-        return
-    end
-    local cam = workspace.CurrentCamera
-    local _, onScreen = cam:WorldToViewportPoint(tR.Position)
-    if not onScreen then
-        if MCXC.Cache.ESP[p.Name] then MCXC.Cache.ESP[p.Name].Enabled = false end
-        return
-    end
-    local bg = MCXC.Cache.ESP[p.Name]
-    if not bg or bg.Parent ~= MCXC.Cache.ESPFolder then
-        if bg then bg:Destroy() end
-        bg = I_new("BillboardGui", MCXC.Cache.ESPFolder)
         bg.Name = "ESP_"..MCXC.State.SessionID
         bg.Size, bg.AlwaysOnTop, bg.StudsOffset = U2(0,65,0,22), true, V3(0,3.5,0)
         local nL = I_new("TextLabel", bg)
