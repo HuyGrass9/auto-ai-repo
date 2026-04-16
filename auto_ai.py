@@ -6,7 +6,6 @@ from git import Repo
 # --- CẤU HÌNH ---
 GROQ_API_KEY = "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"
 FILE_PATH = "main.py"
-# Llama-3.3-70b-versatile là model sửa code cực tốt và miễn phí trên Groq
 MODEL = "llama-3.3-70b-versatile" 
 
 def call_groq_api(code):
@@ -20,7 +19,7 @@ def call_groq_api(code):
         "messages": [
             {
                 "role": "system", 
-                "content": "You are a senior Python developer. Improve, optimize, and fix the provided code. Return ONLY the raw code. NO markdown, NO explanation, NO backticks."
+                "content": "You are a senior Python developer. Improve the code for a game macro. Return ONLY raw code. No markdown."
             },
             {"role": "user", "content": code}
         ],
@@ -32,44 +31,56 @@ def call_groq_api(code):
         if response.status_code == 200:
             res = response.json()
             content = res['choices'][0]['message']['content']
-            # Lọc bỏ dấu ``` nếu AI cố tình thêm vào
             clean_code = content.replace("```python", "").replace("```", "").strip()
             return clean_code
-        else:
-            print(f"❌ Lỗi API Groq ({response.status_code}): {response.text}")
     except Exception as e:
-        print(f"❌ Lỗi kết nối: {e}")
+        print(f"❌ Lỗi AI: {e}")
     return None
+
+def git_process():
+    try:
+        repo = Repo(".")
+        # 1. Add và Commit
+        repo.git.add(A=True)
+        if repo.is_dirty():
+            repo.index.commit("AI Evolution: Auto-update code")
+            print("📝 Đã commit sự thay đổi.")
+        else:
+            print("ℹ️ Không có gì thay đổi để commit.")
+            return
+
+        # 2. Xử lý Push (Tự động nhận diện branch main hoặc master)
+        print("🚀 Đang đẩy code lên GitHub...")
+        try:
+            # Ép push lên main
+            repo.git.push('-u', 'origin', 'main')
+            print("🔥 ĐÃ PUSH THÀNH CÔNG LÊN NHÁNH MAIN!")
+        except:
+            # Nếu không có main thì thử master
+            repo.git.push('-u', 'origin', 'master')
+            print("🔥 ĐÃ PUSH THÀNH CÔNG LÊN NHÁNH MASTER!")
+
+    except Exception as e:
+        print(f"⚠️ Lỗi Git: {e}")
 
 def main():
     if not os.path.exists(FILE_PATH):
-        print(f"❌ Không tìm thấy file {FILE_PATH}!")
-        return
+        # Tạo file main.py trống nếu chưa có để AI nâng cấp
+        with open(FILE_PATH, "w") as f: f.write("# Start coding here")
 
     with open(FILE_PATH, "r", encoding="utf-8") as f:
         old_code = f.read()
 
-    print(f"🚀 Đang dùng Groq AI (Llama 3.3) nâng cấp code...")
+    print(f"🤖 Đang nhờ AI nâng cấp file {FILE_PATH}...")
     new_code = call_groq_api(old_code)
 
     if new_code and len(new_code) > 10:
-        # Ghi code mới
         with open(FILE_PATH, "w", encoding="utf-8") as f:
             f.write(new_code)
-        print("✅ Đã cập nhật code mới.")
-
-        # Push GitHub
-        try:
-            repo = Repo(".")
-            repo.git.add(A=True)
-            repo.index.commit("AI auto-evolution via Groq")
-            origin = repo.remote(name='origin')
-            origin.push()
-            print("🔥 ĐÃ PUSH LÊN GITHUB THÀNH CÔNG!")
-        except Exception as e:
-            print(f"⚠️ Push thất bại: {e}. Hãy đảm bảo bạn đã login git trên Termux.")
+        print("✅ Đã ghi code mới.")
+        git_process()
     else:
-        print("💀 AI không trả về code hợp lệ. Thử lại sau!")
+        print("💀 AI không trả về code hợp lệ.")
 
 if __name__ == "__main__":
     main()
