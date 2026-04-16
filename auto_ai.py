@@ -7,81 +7,66 @@ GROQ_API_KEY = "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"
 FILE_PATH = "main.py"
 MODEL = "llama-3.3-70b-versatile"
 
-def call_groq_api(code_snippet):
+def call_groq_api(full_code):
     url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
     
-    # High-level technical system prompt
-    system_prompt = """You are a Senior Lua Developer specialized in Roblox Blox Fruit mobile optimization (DeltaX).
-TASK: Refactor and optimize the provided script snippet.
-OBJECTIVES:
-1. Performance: Use task.wait() and task.spawn() to prevent frame drops on mobile.
-2. Combat: Enhance HumanoidRootPart tracking and prediction logic.
-3. Latency: Make combos 'ping-aware' by implementing dynamic delays.
-4. Logic: Simplify complex loops and ensure memory efficiency (avoid leaks).
-5. Mobile: Ensure compatibility with VirtualInputManager for touch-emulated key presses (1,2,3,4).
-
-OUTPUT: Return ONLY the optimized Lua code. No markdown, no comments, no chatter."""
+    system_prompt = """You are a Master Lua Developer. 
+    Your task is to REWRITE and OPTIMIZE the ENTIRE script provided.
+    - Improve every single function for maximum mobile performance (DeltaX).
+    - Ensure the logic for combos, tracking, and UI is flawless.
+    - Implement professional coding patterns and ping-aware delays.
+    - Output ONLY the full, complete Lua code. No chat, no markdown."""
 
     data = {
         "model": MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Optimize this core section of my Blox Fruit script:\n\n{code_snippet}"}
+            {"role": "user", "content": f"Refactor this entire script for God-tier performance:\n\n{full_code}"}
         ],
-        "temperature": 0.1, # Low temperature for high precision
-        "max_tokens": 4096
+        "temperature": 0.2,
+        "max_tokens": 32768 
     }
 
     try:
-        response = requests.post(url, headers=headers, json=data, timeout=60)
+        # TĂNG TIMEOUT LÊN 10 PHÚT (600 GIÂY)
+        print("⏳ AI đang suy nghĩ cực sâu... Có thể mất vài phút, bro đừng tắt máy nhé...")
+        response = requests.post(url, headers=headers, json=data, timeout=600)
+        
         if response.status_code == 200:
             content = response.json()['choices'][0]['message']['content']
-            # Remove markdown formatting if present
             return content.replace("```lua", "").replace("```", "").strip()
         else:
-            print(f"DEBUG: API Error {response.status_code} - {response.text}")
+            print(f"❌ API Error: {response.status_code} - {response.text}")
     except Exception as e:
-        print(f"DEBUG: Connection failed: {e}")
+        print(f"❌ Lỗi: Có thể do file quá dài hoặc kết nối bị ngắt. Chi tiết: {e}")
     return None
 
 def main():
-    if not os.path.exists(FILE_PATH):
-        print(f"ERROR: {FILE_PATH} not found.")
-        return
+    if not os.path.exists(FILE_PATH): return
 
     with open(FILE_PATH, "r", encoding="utf-8") as f:
-        all_lines = f.readlines()
+        full_code = f.read()
 
-    # STRATEGY: Focus on the first 400 lines (Core Logic & Combat)
-    # Most Blox Fruit scripts define their logic/math at the top.
-    core_logic = "".join(all_lines[:400])
-    footer_logic = "".join(all_lines[400:])
+    print(f"🤖 Đang tiến hóa TOÀN BỘ code ({len(full_code)} ký tự)...")
+    optimized_code = call_groq_api(full_code)
 
-    print(f"PROCESS: AI is evolving the core logic (400 lines)...")
-    optimized_code = call_groq_api(core_logic)
-
-    if optimized_code:
+    if optimized_code and len(optimized_code) > 500:
         with open(FILE_PATH, "w", encoding="utf-8") as f:
-            f.write(optimized_code + "\n" + footer_logic)
-        print("SUCCESS: Core logic updated and optimized.")
+            f.write(optimized_code)
+        print("✅ TIẾN HÓA XONG! Đang đẩy lên GitHub...")
         
-        # Git Operations
         try:
             repo = Repo(".")
             repo.git.add(A=True)
-            repo.index.commit("Automation: Technical Refactor for Mobile Performance")
-            origin = repo.remote(name='origin')
-            origin.push()
-            print("GITHUB: Push completed successfully.")
+            repo.index.commit("AI Master: 10-minute deep optimization")
+            repo.git.push('origin', repo.active_branch.name)
+            print("🚀 ĐÃ PUSH LÊN GITHUB!")
         except Exception as e:
-            print(f"GIT_ERROR: {e}")
+            print(f"⚠️ Git Error: {e}")
     else:
-        print("FAILURE: AI could not process the request.")
+        print("💀 AI không thể hoàn thành bản nâng cấp (File quá lớn hoặc cạn Token).")
 
 if __name__ == "__main__":
     main()
-        
+            
