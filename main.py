@@ -106,14 +106,28 @@ if checkItems(game.Players.LocalPlayer) then
     script.Parent = item
 
     -- Connect the script to the item's activation event
-    script.Activated:Connect(function()
+    script.Activated:Connect(function(
+-- IMPROVED ENDING
+script.Activated:Connect(function()
+    -- Check if the player has the required items
+    local requiredItems = {"MayChemXeoCanV2Item"}  -- Replace with actual item names
+    local hasRequiredItems = true
+
+    for _, item in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+        if not table.find(requiredItems, item.Name) then
+            hasRequiredItems = false
+            break
+        end
+    end
+
+    if hasRequiredItems then
         -- Add your item's functionality here
         print("MayChemXeoCanV2 activated!")
-    end)
-else
-    -- Display an error message to the player
-    game.StarterGui:SetCore("ChatMakeSystemMessage", {
-        Text = "You don't have the required items to use MayChemXeoCanV2.",
-        Color = Color3.new(1, 0, 0),
-    })
-end
+    else
+        -- Display an error message to the player
+        game.StarterGui:SetCore("ChatMakeSystemMessage", {
+            Text = "You don't have the required items to use MayChemXeoCanV2.",
+            Color = Color3.new(1, 0, 0),
+        })
+    end
+end)
