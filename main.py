@@ -96,147 +96,161 @@ local function toolDetection()
             -- game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4"))
         end
     end
-    local function checkBusy()
-        local character = game.Players.LocalPlayer.Character
-        if character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0 then
-            return false
-        else
-            return true
-        end
-    end
     local function isStunned()
-        local character = game.Players.LocalPlayer.Character
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            local rootPart = character.HumanoidRootPart
-            if rootPart.Velocity.Magnitude > 0 then
-                return false
-            else
-                return true
-            end
-        end
+        return game.Players.LocalPlayer.Character.HumanoidRootPart:FindFirstChild("Stunned") and game.Players.LocalPlayer.Character.HumanoidRootPart.Stunned.Value == true
+    end
+    local function checkBusy()
+        return game.Players.LocalPlayer.Character.HumanoidRootPart:FindFirstChild("Busy") and game.Players.LocalPlayer.Character.HumanoidRootPart.Busy.Value == true
     end
     local function combo()
-        if not checkBusy() and not isStunned() then
-            executeCombo()
+        while true do
+            if not isStunned() and not checkBusy() then
+                executeCombo()
+            end
+            task.wait(cfg.comboDelay)
         end
     end
-    while wait() do
-        combo()
-    end
+    task.spawn(combo)
 end
 
 --- Silent Aim Section ---
-local silentAim = {}
-local function getNearestEnemy()
-    local players = game:GetService("Players"):GetPlayers()
-    local nearestEnemy = nil
-    local nearestDistance = math.huge
-    for _, player in pairs(players) do
-        if player ~= game.Players.LocalPlayer and player.Character then
-            local character = player.Character
-            local head = character:FindFirstChild("Head")
-            if head then
-                local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - head.Position).Magnitude
-                if distance < nearestDistance then
-                    nearestDistance = distance
+local function silentAim()
+    local function getNearestEnemy()
+        local nearestEnemy = nil
+        local minDistance = math.huge
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                if distance < minDistance then
+                    minDistance = distance
                     nearestEnemy = player
                 end
             end
         end
+        return nearestEnemy
     end
-    return nearestEnemy
-end
-local function getEnemyPosition()
-    local nearestEnemy = getNearestEnemy()
-    if nearestEnemy then
-        local character = nearestEnemy.Character
-        local head = character:FindFirstChild("Head")
-        if head then
-            return head.Position
+    local function fireServer(namecall)
+        local args = {...}
+        local method = namecall
+        if method == "FireServer" then
+            local nearestEnemy = getNearestEnemy()
+            if nearestEnemy then
+                args[1] = nearestEnemy.Character.HumanoidRootPart.Position
+            end
+        end
+        return namecall(args)
+    end
+    local function overrideVector3(oldFunction)
+        return function(...)
+            local args = {...}
+            local result = oldFunction(...)
+            if result then
+                local nearestEnemy = getNearestEnemy()
+                if nearestEnemy then
+                    result = nearestEnemy.Character.HumanoidRootPart.Position
+                end
+            end
+            return result
         end
     end
-end
-local function silentAimFireServer()
-    local args = getremotes().BloxFruits:InvokeServer("FireServer", "silentAim", getEnemyPosition())
-end
-local function silentAimHook()
-    local oldFireServer = getrawmetatable().__index.__call
-    setreadonly(getrawmetatable(), false)
-    getrawmetatable().__index.__call = function(self, ...)
-        if self == getremotes().BloxFruits then
-            return silentAimFireServer(...)
-        else
-            return oldFireServer(self, ...)
+    local function overrideCFrame(oldFunction)
+        return function(...)
+            local args = {...}
+            local result = oldFunction(...)
+            if result then
+                local nearestEnemy = getNearestEnemy()
+                if nearestEnemy then
+                    result = nearestEnemy.Character.HumanoidRootPart.CFrame
+                end
+            end
+            return result
         end
     end
-    setreadonly(getrawmetatable(), true)
+    local function hookFunction(func)
+        local oldFunction = func
+        func = function(...)
+            local args = {...}
+            for i, v in pairs(args) do
+                if type(v) == "Vector3" then
+                    args[i] = overrideVector3(oldFunction)(args[i])
+                elseif type(v) == "CFrame" then
+                    args[i] = overrideCFrame(oldFunction)(args[i])
+                end
+            end
+            return oldFunction(...)
+        end
+        return func
+    end
+    local function hook()
+        local function hookFunction(func)
+            return hookFunction(func)
+        end
+        hookFunction(game.Players.LocalPlayer.Character.HumanoidRootPart.FireServer)
+    end
+    hook()
 end
-silentAimHook()
 
 --- Visuals Section ---
-local visuals = {}
-local function drawBillboardGui()
-    local player = game.Players.LocalPlayer
-    local character = player.Character
-    local head = character:FindFirstChild("Head")
-    if head then
-        local billboardGui = Instance.new("BillboardGui")
-        billboardGui.Parent = head
-        billboardGui.Name = "BillboardGui"
-        billboardGui.Adornee = head
-        billboardGui.StudsOffset = Vector3.new(0, 2, 0)
+local function visuals()
+    local function billboardGui()
+        local billboard = Instance.new("BillboardGui")
+        billboard.Parent = game.Players.LocalPlayer.PlayerGui
+        billboard.Name = "Billboard"
+        billboard.Adornee = game.Players.LocalPlayer.Character.HumanoidRootPart
+        billboard.AlwaysOnTop = true
         local textLabel = Instance.new("TextLabel")
-        textLabel.Parent = billboardGui
+        textLabel.Parent = billboard
         textLabel.Name = "TextLabel"
         textLabel.BackgroundTransparency = 1
-        textLabel.Text = player.Name
-        textLabel.TextSize = 14
         textLabel.TextColor3 = Color3.new(1, 1, 1)
-        textLabel.Font = Enum.Font.SourceSans
+        textLabel.TextSize = 14
+        textLabel.Text = "Name: "
+        local function updateTextLabel()
+            local nearestEnemy = getNearestEnemy()
+            if nearestEnemy then
+                textLabel.Text = "Name: " .. nearestEnemy.Name .. " | Health: " .. nearestEnemy.Character.Humanoid.Health .. " | Level: " .. nearestEnemy.Character.Humanoid.Level .. " | Weapon: " .. nearestEnemy.Character:FindFirstChild("Tool").Name
+            end
+        end
+        updateTextLabel()
+        task.spawn(function()
+            while true do
+                updateTextLabel()
+                task.wait(0.1)
+            end
+        end)
     end
-end
-local function drawTracers()
-    local player = game.Players.LocalPlayer
-    local character = player.Character
-    local head = character:FindFirstChild("Head")
-    if head then
+    local function tracers()
         local tracer = Instance.new("Part")
-        tracer.Parent = game.Workspace
+        tracer.Parent = game.Players.LocalPlayer.Character
         tracer.Name = "Tracer"
         tracer.Anchored = true
         tracer.CanCollide = false
         tracer.Transparency = 0.5
-        tracer.BrickColor = BrickColor.new("Bright blue")
-        local tweenService = game:GetService("TweenService")
-        local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
-        local tween = tweenService:Create(tracer, tweenInfo, {CFrame = head.CFrame * CFrame.new(0, 0, 10)})
-        tween:Play()
-        wait(0.5)
-        tween:Destroy()
-        tracer:Destroy()
+        local function updateTracer()
+            local nearestEnemy = getNearestEnemy()
+            if nearestEnemy then
+                tracer.Position = nearestEnemy.Character.HumanoidRootPart.Position
+            end
+        end
+        updateTracer()
+        task.spawn(function()
+            while true do
+                updateTracer()
+                task.wait(0.1)
+            end
+        end)
     end
-end
-local function drawEsp()
-    local player = game.Players.LocalPlayer
-    local character = player.Character
-    local head = character:FindFirstChild("Head")
-    if head then
-        local esp = Instance.new("BillboardGui")
-        esp.Parent = head
-        esp.Name = "ESP"
-        esp.Adornee = head
-        esp.StudsOffset = Vector3.new(0, 2, 0)
-        local textLabel = Instance.new("TextLabel")
-        textLabel.Parent = esp
-        textLabel.Name = "TextLabel"
-        textLabel.BackgroundTransparency = 1
-        textLabel.Text = player.Name
-        textLabel.TextSize = 14
-        textLabel.TextColor3 = Color3.new(1, 1, 1)
-        textLabel.Font = Enum.Font.SourceSans
-        local healthLabel = Instance.new("TextLabel")
-        healthLabel.Parent = esp
-        healthLabel.Name = "HealthLabel"
-        healthLabel.BackgroundTransparency = 1
-        healthLabel.Text = "Health: " .. player.Character.Humanoid.Health
-        healthLabel.Text
+    local function fovChanger()
+        local function changeFov()
+            game.Workspace.CurrentCamera.FieldOfView = cfg.fov
+        end
+        changeFov()
+        task.spawn(function()
+            while true do
+                changeFov()
+                task.wait(0.1)
+            end
+        end)
+    end
+    local function esp()
+        local function updateEsp()
