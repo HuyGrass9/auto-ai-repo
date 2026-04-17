@@ -4,62 +4,78 @@ import time
 from git import Repo
 
 # --- CONFIGURATION ---
-GROQ_API_KEY = "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"
+# API Key bro vừa gửi
+GEMINI_API_KEY = "AQ.Ab8RN6IZOku1junDZrso5GS-ByiW_w-1Up7lapurlc4V9UEe1w"
 FILE_PATH = "main.py"
-MODEL = "llama-3.3-70b-versatile"
+# Sử dụng bản Flash 1.5 để tốc độ nhanh nhất và miễn phí
+MODEL_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
 
-def call_groq_api():
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+def call_gemini_api(full_code):
+    headers = {"Content-Type": "application/json"}
     
     # Sử dụng Siêu Prompt từ kinh nghiệm của bro
-    system_prompt = """You are a senior Roblox Lua developer. 
-    Build/Refine MayChemXeoCan V2 based on the technical specs.
-    Focus on making the SilentAim and CombatEngine more aggressive and precise.
-    OUTPUT: Return ONLY raw Lua code."""
+    system_instruction = """You are a senior Roblox Lua developer. 
+    Build/Refine 'MayChemXeoCan V2' based on the technical specs.
+    Focus on: Perfect SilentAim, Mobile Optimization for Delta X, and Frame-perfect combos.
+    You must return ONLY the raw Lua code. No markdown, no chat."""
 
     data = {
-        "model": MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": "Analyze the current trends in Roblox DeltaX Blox Fruit PvP and update the script to be even more powerful. Optimize the prediction math."}
-        ],
-        "temperature": 0.3,
-        "max_tokens": 8000
+        "contents": [{
+            "parts": [{
+                "text": f"{system_instruction}\n\nHere is the current code, analyze and evolve it to God-tier level:\n\n{full_code}"
+            }]
+        }],
+        "generationConfig": {
+            "temperature": 0.2,
+            "maxOutputTokens": 8192,
+        }
     }
 
     try:
-        response = requests.post(url, headers=headers, json=data, timeout=300)
+        response = requests.post(MODEL_URL, headers=headers, json=data, timeout=300)
         if response.status_code == 200:
-            return response.json()['choices'][0]['message']['content'].replace("```lua", "").replace("```", "").strip()
+            result = response.json()
+            # Lấy nội dung code từ cấu trúc JSON của Gemini
+            content = result['candidates'][0]['content']['parts'][0]['text']
+            return content.replace("```lua", "").replace("```", "").strip()
+        else:
+            print(f"❌ Gemini Error: {response.status_code} - {response.text}")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Exception: {e}")
     return None
 
 def main():
     iteration = 1
-    while True: # VÒNG LẶP VÔ HẠN
-        print(f"\n🚀 BẮT ĐẦU ĐỢT TIẾN HÓA THỨ {iteration}...")
+    while True:
+        print(f"\n🚀 [GEMINI MODE] BẮT ĐẦU ĐỢT TIẾN HÓA THỨ {iteration}...")
         
-        new_script = call_groq_api()
+        if not os.path.exists(FILE_PATH):
+            full_code = "-- Initial Script"
+        else:
+            with open(FILE_PATH, "r", encoding="utf-8") as f:
+                full_code = f.read()
+
+        new_script = call_gemini_api(full_code)
 
         if new_script and len(new_script) > 1000:
             with open(FILE_PATH, "w", encoding="utf-8") as f:
                 f.write(new_script)
-            print(f"✅ Đợt {iteration}: Đã cập nhật xong code mới.")
+            print(f"✅ Đợt {iteration}: Gemini đã tối ưu xong toàn bộ file.")
             
             try:
                 repo = Repo(".")
                 repo.git.add(A=True)
-                repo.index.commit(f"Evolution Cycle {iteration}: Auto-Refinement")
+                repo.index.commit(f"Gemini Evolution {iteration}: Massive Optimization")
                 repo.git.push('origin', repo.active_branch.name)
                 print(f"🔥 Đã Push đợt {iteration} lên GitHub thành công!")
             except Exception as e:
                 print(f"⚠️ Git Error: {e}")
         
-        print(f"💤 Nghỉ 5 phút để tránh nghẽn API, sau đó sẽ tiếp tục...")
-        time.sleep(300) # Nghỉ 5 phút giữa các đợt update
+        # Gemini bản Free cho phép khoảng 15 lần/phút, mình nghỉ 1 phút cho an toàn và sâu sắc
+        print(f"💤 Nghỉ 60 giây để Gemini 'hồi mana'...")
+        time.sleep(60)
         iteration += 1
 
 if __name__ == "__main__":
     main()
+    
