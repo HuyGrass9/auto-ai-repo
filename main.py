@@ -1,151 +1,237 @@
-local Services = {}
-Services:Init = function()
-    -- Khởi tạo các dịch vụ
-    Services.Skill = {}
-    Services.Skill:Init = function()
-        -- Khởi tạo các kỹ năng
-        Services.Skill.AutoCombo = {}
-        Services.Skill.AutoCombo:Init = function()
-            -- Khởi tạo tự động combo
+-- Services
+local services = {}
+services.Init = function()
+    -- Initialize services
+    game:GetService("Players").PlayerAdded:Connect(function(player)
+        -- Create a new player object when a player joins the game
+        player.PlayerGui = Instance.new("ScreenGui")
+        player.PlayerGui.Name = "PlayerGui"
+        player.PlayerGui.Parent = player.PlayerGui
+    end)
+end
+
+-- Config
+local config = {}
+config.Init = function()
+    -- Load configuration from a file or database
+    config.data = {
+        autoCombo = true,
+        switchTool = true,
+        fastSkill = true,
+        silentAim = true,
+        visuals = true,
+        lagFixer = true,
+        fakeLag = true,
+        ui = true
+    }
+end
+
+-- State
+local state = {}
+state.Init = function()
+    -- Initialize game state
+    state.player = game.Players.LocalPlayer
+    state.target = nil
+    state.combo = false
+    state.busy = false
+end
+
+-- Cache
+local cache = {}
+cache.Init = function()
+    -- Initialize cache
+    cache.players = {}
+    cache.tools = {}
+end
+
+-- Utils
+local utils = {}
+utils.getTool = function(player)
+    -- Get the tool of a player
+    local tool = player.Backpack:GetChildren()[1]
+    return tool
+end
+
+-- CombatEngine
+local combatEngine = {}
+combatEngine.Init = function()
+    -- Initialize combat engine
+    combatEngine.autoCombo = config.data.autoCombo
+    combatEngine.switchTool = config.data.switchTool
+    combatEngine.fastSkill = config.data.fastSkill
+end
+
+combatEngine.AutoCombo = function()
+    -- Auto combo function
+    if combatEngine.autoCombo then
+        -- Check if player is busy
+        if not state.busy then
+            -- Check if player has a tool
+            local tool = utils.getTool(state.player)
+            if tool then
+                -- Use tool
+                tool:Activate()
+            end
         end
-        Services.Skill.AutoCombo:Use = function()
-            -- Sử dụng tự động combo
-        end
-        Services.Skill.SwitchTool = {}
-        Services.Skill.SwitchTool:Init = function()
-            -- Khởi tạo đổi công cụ
-        end
-        Services.Skill.SwitchTool:Use = function()
-            -- Sử dụng đổi công cụ
-        end
-        Services.Skill.FastSkill = {}
-        Services.Skill.FastSkill:Init = function()
-            -- Khởi tạo sử dụng kỹ năng nhanh
-        end
-        Services.Skill.FastSkill:Use = function()
-            -- Sử dụng sử dụng kỹ năng nhanh
+    end
+end
+
+combatEngine.SwitchTool = function()
+    -- Switch tool function
+    if combatEngine.switchTool then
+        -- Check if player has a tool
+        local tool = utils.getTool(state.player)
+        if tool then
+            -- Switch tool
+            tool:Unequip()
         end
     end
-    Services.Skill:Init()
 end
-Services:Init()
 
-local Config = {}
-Config:Init = function()
-    -- Khởi tạo các thiết lập
-    Config.ESP = {}
-    Config.ESP.Enabled = true
-    Config.ESP.Color = {255, 0, 0}
-    Config.SilentAim = {}
-    Config.SilentAim.Enabled = true
-    Config.SilentAim.Color = {0, 255, 0}
+combatEngine.FastSkill = function()
+    -- Fast skill function
+    if combatEngine.fastSkill then
+        -- Check if player is busy
+        if not state.busy then
+            -- Check if player has a tool
+            local tool = utils.getTool(state.player)
+            if tool then
+                -- Use tool
+                tool:Activate()
+            end
+        end
+    end
 end
-Config:Init()
 
-local State = {}
-State:Init = function()
-    -- Khởi tạo trạng thái
-    State.Player = {}
-    State.Player.Position = Vector3.new(0, 0, 0)
-    State.Player.Health = 100
-    State.Player.Aim = {}
-    State.Player.Aim.Position = Vector3.new(0, 0, 0)
+-- SilentAim
+local silentAim = {}
+silentAim.Init = function()
+    -- Initialize silent aim
+    silentAim.target = nil
+    silentAim.locked = false
 end
-State:Init()
 
-local Cache = {}
-Cache:Init = function()
-    -- Khởi tạo bộ nhớ đệm
-    Cache.Players = {}
+silentAim.LockTarget = function()
+    -- Lock target function
+    if silentAim.locked then
+        -- Get the target
+        local target = silentAim.target
+        if target then
+            -- Lock target
+            target.Character.HumanoidRootPart.CFrame = state.player.Character.HumanoidRootPart.CFrame
+        end
+    end
 end
-Cache:Init()
 
-local Utils = {}
-Utils:Init = function()
-    -- Khởi tạo các công cụ chung
-    Utils.Math = {}
-    Utils.Math.Distance = function(pos1, pos2)
-        -- Tính khoảng cách giữa hai vị trí
-    end
+-- Visuals
+local visuals = {}
+visuals.Init = function()
+    -- Initialize visuals
+    visuals.esp = Instance.new("BillboardGui")
+    visuals.esp.Name = "ESP"
+    visuals.esp.Parent = game.Workspace
+    visuals.esp.Adornee = state.player.Character
+    visuals.esp.AlwaysOnTop = true
+    visuals.esp.StudsOffset = Vector3.new(0, 2, 0)
+    visuals.tracer = Instance.new("Beam")
+    visuals.tracer.Name = "Tracer"
+    visuals.tracer.Parent = game.Workspace
+    visuals.tracer.Color = Color3.new(1, 0, 0)
+    visuals.tracer.Width = 0.1
 end
-Utils:Init()
 
-local CombatEngine = {}
-CombatEngine:Init = function()
-    -- Khởi tạo hệ thống combat
-    CombatEngine.AutoCombo = {}
-    CombatEngine.AutoCombo:Init = function()
-        -- Khởi tạo tự động combo
-    end
-    CombatEngine.AutoCombo:Use = function()
-        -- Sử dụng tự động combo
-    end
-    CombatEngine.SwitchTool = {}
-    CombatEngine.SwitchTool:Init = function()
-        -- Khởi tạo đổi công cụ
-    end
-    CombatEngine.SwitchTool:Use = function()
-        -- Sử dụng đổi công cụ
-    end
-    CombatEngine.FastSkill = {}
-    CombatEngine.FastSkill:Init = function()
-        -- Khởi tạo sử dụng kỹ năng nhanh
-    end
-    CombatEngine.FastSkill:Use = function()
-        -- Sử dụng sử dụng kỹ năng nhanh
-    end
+-- LagFixer
+local lagFixer = {}
+lagFixer.Init = function()
+    -- Initialize lag fixer
+    lagFixer.player = state.player
+    lagFixer.tool = utils.getTool(state.player)
 end
-CombatEngine:Init()
 
-local SilentAim = {}
-SilentAim:Init = function()
-    -- Khởi tạo hệ thống nhắm mờ
-    SilentAim.__namecall = function(func, ...)
-        -- Hook __namecall
+lagFixer.SetNetworkOwner = function()
+    -- Set network owner function
+    if lagFixer.tool then
+        -- Set network owner
+        lagFixer.tool:SetNetworkOwner(lagFixer.player)
     end
 end
-SilentAim:Init()
 
-local Visuals = {}
-Visuals:Init = function()
-    -- Khởi tạo hệ thống hình ảnh
-    Visuals.ESP = {}
-    Visuals.ESP.BillboardGui = function(pos, color)
-        -- Tạo bảng billboard
-    end
-    Visuals.ESP.TracerBeam = function(pos1, pos2, color)
-        -- Tạo tia laser
-    end
-    Visuals.SilentAim = {}
-    Visuals.SilentAim.Beam = function(pos1, pos2, color)
-        -- Tạo tia laser nhắm mờ
-    end
+-- FakeLag
+local fakeLag = {}
+fakeLag.Init = function()
+    -- Initialize fake lag
+    fakeLag.player = state.player
+    fakeLag.tool = utils.getTool(state.player)
 end
-Visuals:Init()
 
-local LagFixer = {}
-LagFixer:Init = function()
-    -- Khởi tạo hệ thống giảm lag
-    LagFixer.SetNetworkOwner = function(player)
-        -- Đặt chủ sở hữu mạng
+fakeLag.SetNetworkOwner = function()
+    -- Set network owner function
+    if fakeLag.tool then
+        -- Set network owner
+        fakeLag.tool:SetNetworkOwner(fakeLag.player)
     end
 end
-LagFixer:Init()
 
-local FakeLag = {}
-FakeLag:Init = function()
-    -- Khởi tạo hệ thống giả lập lag
-    FakeLag.SetNetworkOwner = function(player)
-        -- Đặt chủ sở hữu mạng
-    end
+-- MaruUI
+local maruUI = {}
+maruUI.Init = function()
+    -- Initialize Maru UI
+    maruUI.gui = Instance.new("ScreenGui")
+    maruUI.gui.Name = "MaruUI"
+    maruUI.gui.Parent = game.Players.LocalPlayer.PlayerGui
+    maruUI.draggable = true
+    maruUI.touchDrag = false
 end
-FakeLag:Init()
 
-local MaruUI = {}
-MaruUI:Init = function()
-    -- Khởi tạo hệ thống UI
-    MaruUI.gethui = function()
-        -- Lấy UI
+maruUI.getHUI = function()
+    -- Get Maru UI function
+    if maruUI.gui then
+        -- Return Maru UI
+        return maruUI.gui
     end
 end
-MaruUI:Init()
+
+-- Hook
+local hook = {}
+hook.__namecall = function(self, name, ...)
+    -- Hook function
+    if name == "FireServer" then
+        -- Check if silent aim is enabled
+        if config.data.silentAim then
+            -- Get the target
+            local target = ...
+            if target then
+                -- Lock target
+                silentAim.target = target
+                silentAim.locked = true
+            end
+        end
+    end
+end
+
+-- Main
+local main = {}
+main.Init = function()
+    -- Initialize main
+    services.Init()
+    config.Init()
+    state.Init()
+    cache.Init()
+    utils.Init()
+    combatEngine.Init()
+    silentAim.Init()
+    visuals.Init()
+    lagFixer.Init()
+    fakeLag.Init()
+    maruUI.Init()
+    hook.__namecall = hook.__namecall
+    game:GetService("RunService").RenderStepped:Connect(function()
+        -- Update visuals
+        visuals.esp.Adornee = state.player.Character
+        visuals.tracer.Parent = game.Workspace
+        -- Update silent aim
+        silentAim.LockTarget()
+    end)
+end
+
+main.Init()
