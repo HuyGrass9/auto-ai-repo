@@ -66,49 +66,185 @@ local function distSq(pos1, pos2)
     return (pos1 - pos2).Magnitude ^ 2
 end
 
--- Lag Fixer
-local function lagFixer()
-    local function neverDeleteBeam()
-        local beam = game.Players.LocalPlayer.Character:FindFirstChild("Beam")
-        if beam then
-            beam.Transparency = 0.5
-            beam.CanCollide = false
+-- Config Module
+local function config()
+    local function saveConfig()
+        local json = HttpService:JSONEncode(cfg)
+        writefile("config.json", json)
+    end
+    local function loadConfig()
+        local json = readfile("config.json")
+        if json then
+            cfg = HttpService:JSONDecode(json)
         end
     end
-    local function neverDeleteTrail()
-        local trail = game.Players.LocalPlayer.Character:FindFirstChild("Trail")
-        if trail then
-            trail.Transparency = 0.5
-            trail.CanCollide = false
+    loadConfig()
+    game:GetService("RunService").RenderStepped:Connect(function()
+        if cfg.save then
+            saveConfig()
+            cfg.save = false
         end
-    end
-    local function preserveCharacter()
-        local character = game.Players.LocalPlayer.Character
-        if character then
-            character:WaitForChild("Humanoid")
-        end
-    end
-    neverDeleteBeam()
-    neverDeleteTrail()
-    preserveCharacter()
+    end)
 end
 
--- Fake Lag
-local function fakeLag()
-    local function setNetworkOwner()
+-- State Module
+local function stateModule()
+    local function updateState()
+        state.tool = 1
+        state.combo = false
+        state.stunned = false
+        state.busy = false
+        state.nearestEnemy = nil
+    end
+    updateState()
+    game:GetService("RunService").RenderStepped:Connect(function()
+        updateState()
+    end)
+end
+
+-- Cache Module
+local function cacheModule()
+    local function updateCache()
+        cache.tool1 = nil
+        cache.tool2 = nil
+        cache.tool3 = nil
+        cache.tool4 = nil
+        cache.nearestEnemy = nil
+    end
+    updateCache()
+    game:GetService("RunService").RenderStepped:Connect(function()
+        updateCache()
+    end)
+end
+
+-- Utils Module
+local function utilsModule()
+    local function tween(value, time, easing)
+        local startTime = tick()
+        local function update()
+            local t = (tick() - startTime) / time
+            if t > 1 then
+                t = 1
+            end
+            if easing then
+                t = easing(t)
+            end
+            return value * t
+        end
+        return update
+    end
+    local function makeDraggable(gui)
+        gui.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                gui.InputBegan:Disable()
+                gui.InputEnded:Disable()
+                gui:TweenPosition(gui.AbsolutePosition, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, 0.5, true)
+            end
+        end)
+    end
+    local function getPing()
+        return Players.LocalPlayer.NetworkStats.RoundTripTime
+    end
+    local function distSq(pos1, pos2)
+        return (pos1 - pos2).Magnitude ^ 2
+    end
+end
+
+-- Combat Engine Module
+local function combatEngineModule()
+    local function toolDetection()
+        local tool1 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool1")
+        local tool2 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2")
+        local tool3 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3")
+        local tool4 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4")
+        local function checkTool()
+            if tool1 and tool1.Equipped then
+                state.tool = 1
+            elseif tool2 and tool2.Equipped then
+                state.tool = 2
+            elseif tool3 and tool3.Equipped then
+                state.tool = 3
+            elseif tool4 and tool4.Equipped then
+                state.tool = 4
+            end
+        end
+        checkTool()
+        local function executeCombo()
+            if state.tool == 1 then
+                -- Tool 1 combo
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool1"))
+                task.wait(0.5)
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2"))
+                task.wait(0.5)
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3"))
+                task.wait(0.5)
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4"))
+            elseif state.tool == 2 then
+                -- Tool 2 combo
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2"))
+                task.wait(0.5)
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3"))
+                task.wait(0.5)
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4"))
+            elseif state.tool == 3 then
+                -- Tool 3 combo
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3"))
+                task.wait(0.5)
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4"))
+            elseif state.tool == 4 then
+                -- Tool 4 combo
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4"))
+            end
+        end
+        executeCombo()
+    end
+    local function autoCombo()
         while true do
-            game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
-            game.Players.LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Dying)
-            task.wait(0.5)
-            game.Players.LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+            toolDetection()
             task.wait(0.5)
         end
     end
-    setNetworkOwner()
+    local function fastSkill()
+        local function checkBusy()
+            if state.busy then
+                return true
+            else
+                return false
+            end
+        end
+        local function executeSkill()
+            if not checkBusy() then
+                state.busy = true
+                task.wait(0.5)
+                state.busy = false
+            end
+        end
+        executeSkill()
+    end
+    local function isStunned()
+        local function checkStunned()
+            if state.stunned then
+                return true
+            else
+                return false
+            end
+        end
+        return checkStunned()
+    end
+    local function checkBusy()
+        local function checkBusy()
+            if state.busy then
+                return true
+            else
+                return false
+            end
+        end
+        return checkBusy()
+    end
 end
 
--- Silent Aim
-local function silentAim()
+-- Silent Aim Module
+local function silentAimModule()
     local function fireServer(namecall)
         local args = {...}
         if namecall == "FireServer" and args[1] == "GetNearestEnemy" then
@@ -149,126 +285,3 @@ local function silentAim()
     end
     local function getEnemyCFrame()
         local nearestEnemy = getNearestEnemy()
-        if nearestEnemy then
-            return nearestEnemy.Character.HumanoidRootPart.CFrame
-        else
-            return game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
-        end
-    end
-    local function getEnemyPosition()
-        local nearestEnemy = getNearestEnemy()
-        if nearestEnemy then
-            return nearestEnemy.Character.HumanoidRootPart.Position
-        else
-            return game.Players.LocalPlayer.Character.HumanoidRootPart.Position
-        end
-    end
-    local function overrideVector3(namecall)
-        local args = {...}
-        if namecall == "GetNearestEnemy" then
-            args[2] = getEnemyPosition()
-            return namecall(unpack(args))
-        else
-            return namecall(unpack(args))
-        end
-    end
-    local function overrideCFrame(namecall)
-        local args = {...}
-        if namecall == "GetNearestEnemy" then
-            args[2] = getEnemyCFrame()
-            return namecall(unpack(args))
-        else
-            return namecall(unpack(args))
-        end
-    end
-    local function hook(namecall)
-        return fireServer(namecall)
-    end
-    local function hookVector3(namecall)
-        return overrideVector3(namecall)
-    end
-    local function hookCFrame(namecall)
-        return overrideCFrame(namecall)
-    end
-    local function init()
-        game:GetService("RunService").RenderStepped:Connect(hook)
-        game:GetService("RunService").RenderStepped:Connect(hookVector3)
-        game:GetService("RunService").RenderStepped:Connect(hookCFrame)
-    end
-    init()
-end
-
--- Visuals
-local function visuals()
-    local function billboardGui()
-        local billboard = Instance.new("BillboardGui")
-        billboard.Parent = game.Players.LocalPlayer.Character
-        billboard.Adornee = game.Players.LocalPlayer.Character.HumanoidRootPart
-        billboard.StudsOffset = Vector3.new(0, 2, 0)
-        billboard.AlwaysOnTop = true
-        local textLabel = Instance.new("TextLabel")
-        textLabel.Parent = billboard
-        textLabel.BackgroundTransparency = 1
-        textLabel.Text = "Name"
-        textLabel.TextColor3 = Color3.new(1, 1, 1)
-        textLabel.Font = Enum.Font.SourceSansBold
-        textLabel.Size = UDim2.new(0, 100, 0, 20)
-        local function updateTextLabel()
-            local nearestEnemy = getNearestEnemy()
-            if nearestEnemy then
-                textLabel.Text = nearestEnemy.Name
-            else
-                textLabel.Text = "No Enemy"
-            end
-        end
-        updateTextLabel()
-        game:GetService("RunService").RenderStepped:Connect(updateTextLabel)
-    end
-    local function tracers()
-        local tracer = Instance.new("Part")
-        tracer.Parent = game.Players.LocalPlayer.Character
-        tracer.Anchored = true
-        tracer.CanCollide = false
-        tracer.Transparency = 0.5
-        local function updateTracer()
-            local nearestEnemy = getNearestEnemy()
-            if nearestEnemy then
-                tracer.Position = nearestEnemy.Character.HumanoidRootPart.Position
-            else
-                tracer.Position = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
-            end
-        end
-        updateTracer()
-        game:GetService("RunService").RenderStepped:Connect(updateTracer)
-    end
-    billboardGui()
-    tracers()
-end
-
--- Combat Engine
-local function combatEngine()
-    local function toolDetection()
-        local tool1 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool1")
-        local tool2 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2")
-        local tool3 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3")
-        local tool4 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4")
-        local function checkTool()
-            if tool1 and tool1.Equipped then
-                state.tool = 1
-            elseif tool2 and tool2.Equipped then
-                state.tool = 2
-            elseif tool3 and tool3.Equipped then
-                state.tool = 3
-            elseif tool4 and tool4.Equipped then
-                state.tool = 4
-            end
-        end
-        checkTool()
-        local function executeCombo()
-            if state.tool == 1 then
-                -- Tool 1 combo
-                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool1"))
-                task.wait(0.5)
-                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2"))
-                task.wait(0.5)
-                game
