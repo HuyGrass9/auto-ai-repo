@@ -1,4 +1,4 @@
-Here is the complete and optimized script:
+Here is the complete Lua script:
 
 -- Services
 local Players = game:GetService("Players")
@@ -290,4 +290,4 @@ local function visualsModule()
             label.Position = UDim2.new(0, 0, 0, 0)
             label.Parent = gui
             local healthBar = Instance.new("Frame")
-            healthBar.Size = UDim
+            healthBar.Size = UDim2
