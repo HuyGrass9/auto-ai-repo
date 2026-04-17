@@ -1,4 +1,4 @@
-Here's the complete and optimized script:
+Here is the complete and optimized script:
 
 -- Services
 local Players = game:GetService("Players")
@@ -74,7 +74,7 @@ end
 
 local function makeDraggable(gui)
     gui.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.Touch then
             gui.InputBegan:Disable()
             gui.InputEnded:Disable()
             gui:TweenPosition(gui.AbsolutePosition, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, 0.5, true)
@@ -290,4 +290,4 @@ local function visualsModule()
             label.Position = UDim2.new(0, 0, 0, 0)
             label.Parent = gui
             local healthBar = Instance.new("Frame")
-            healthBar.Size =
+            healthBar.Size = UDim
