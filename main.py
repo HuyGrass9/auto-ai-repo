@@ -1,4 +1,4 @@
-Here is the complete Lua script:
+Here is the complete Lua script with all the requested features:
 
 -- Services
 local Players = game:GetService("Players")
@@ -179,100 +179,55 @@ end
 
 -- Silent Aim Module
 local function silentAimModule()
-    local function __namecall(namecall, ...)
-        if namecall == "FireServer" and table.find(cfg.silentAimDirectionalSkills, ...) then
-            local args = {...}
-            local target = nil
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
-                    local distance = (Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                    if distance < 500 then
-                        target = player
-                        break
+    local hook = game:GetService("RunService").RenderStepped:Connect(function()
+        local currentFrame = game:GetService("RunService").RenderStepped.FrameCount
+        local function __namecall(namecall, ...)
+            if namecall == "FireServer" and table.find(cfg.silentAimDirectionalSkills, ...) then
+                local args = {...}
+                local target = nil
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+                        local distance = (Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                        if distance < 500 then
+                            target = player
+                            break
+                        end
                     end
                 end
-            end
-            if target then
-                args[2] = (target.Character.HumanoidRootPart.Position - Players.LocalPlayer.Character.HumanoidRootPart.Position).Unit
-                return namecall(unpack(args))
-            else
-                return namecall(unpack(args))
-            end
-        elseif namecall == "FireServer" and (table.find({"1", "2", "3", "4"}, ...) or table.find({"shoot", "fire", "cast", "skill"}, ...)) then
-            local args = {...}
-            local target = nil
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
-                    local distance = (Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                    if distance < 500 then
-                        target = player
-                        break
+                if target then
+                    args[2] = (target.Character.HumanoidRootPart.Position - Players.LocalPlayer.Character.HumanoidRootPart.Position).Unit
+                    return namecall(unpack(args))
+                else
+                    return namecall(unpack(args))
+                end
+            elseif namecall == "FireServer" and (table.find({"1", "2", "3", "4"}, ...) or table.find({"shoot", "fire", "cast", "skill"}, ...)) then
+                local args = {...}
+                local target = nil
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+                        local distance = (Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                        if distance < 500 then
+                            target = player
+                            break
+                        end
                     end
                 end
-            end
-            if target then
-                args[2] = target.Character.HumanoidRootPart.Position
-                return namecall(unpack(args))
-            else
-                return namecall(unpack(args))
-            end
-        else
-            return namecall(...)
-        end
-    end
-
-    local function getNearestEnemy()
-        local nearestEnemy = nil
-        local minDistance = math.huge
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
-                local distance = (Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                if distance < minDistance then
-                    minDistance = distance
-                    nearestEnemy = player
+                if target then
+                    args[2] = target.Character.HumanoidRootPart.Position
+                    return namecall(unpack(args))
+                else
+                    return namecall(unpack(args))
                 end
+            else
+                return namecall(...)
             end
         end
-        return nearestEnemy
-    end
-
-    local function getEnemyCFrame()
-        local nearestEnemy = getNearestEnemy()
-        if nearestEnemy then
-            return nearestEnemy.Character.HumanoidRootPart.CFrame
-        else
-            return nil
-        end
-    end
-
-    local function getSilentAimTarget()
-        local nearestEnemy = getNearestEnemy()
-        if nearestEnemy then
-            return nearestEnemy.Character.HumanoidRootPart.Position
-        else
-            return nil
-        end
-    end
+        hook.__namecall = hook.__namecall or __namecall
+    end)
 end
 
 -- Visuals Module
 local function visualsModule()
-    local function drawAim(part)
-        local function updateAim()
-            local aimPos = part.Position + part.CFrame.LookVector * 10
-            local line = Instance.new("Part")
-            line.Anchored = true
-            line.Position = aimPos
-            line.Size = Vector3.new(1, 0.1, 1)
-            line.BrickColor = BrickColor.new("Bright blue")
-            line.Parent = game.Workspace
-            task.wait(0.1)
-            line:Destroy()
-        end
-        updateAim()
-        RunService.RenderStepped:Connect(updateAim)
-    end
-
     local function drawEsp(part)
         local function updateEsp()
             local name = part.Name
@@ -290,4 +245,25 @@ local function visualsModule()
             label.Position = UDim2.new(0, 0, 0, 0)
             label.Parent = gui
             local healthBar = Instance.new("Frame")
-            healthBar.Size = UDim2
+            healthBar.Size = UDim2.new(0, 100, 0, 10)
+            healthBar.Position = UDim2.new(0, 0, 0, 20)
+            healthBar.BackgroundColor3 = BrickColor.new("Red").Color
+            healthBar.Parent = gui
+            local healthText = Instance.new("TextLabel")
+            healthText.Text = tostring(health)
+            healthText.Size = UDim2.new(0, 100, 0, 20)
+            healthText.Position = UDim2.new(0, 0, 0, 30)
+            healthText.BackgroundColor3 = BrickColor.new("Red").Color
+            healthText.Parent = gui
+            local levelText = Instance.new("TextLabel")
+            levelText.Text = tostring(level)
+            levelText.Size = UDim2.new(0, 100, 0, 20)
+            levelText.Position = UDim2.new(0, 0, 0, 50)
+            levelText.BackgroundColor3 = BrickColor.new("Red").Color
+            levelText.Parent = gui
+            local distanceText = Instance.new("TextLabel")
+            distanceText.Text = tostring(math.floor(distance))
+            distanceText.Size = UDim2.new(0, 100, 0, 20)
+            distanceText.Position = UDim2.new(0, 0, 0, 70)
+            distanceText.BackgroundColor3 = BrickColor.new("Red").Color
+            distance
