@@ -4,30 +4,34 @@ import time
 from git import Repo
 
 # --- CONFIGURATION ---
-# Mã GitHub PAT bro vừa cung cấp
-GITHUB_TOKEN = "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"
+# Lấy token từ môi trường máy (không ghi đè mã vào đây)
+GITHUB_TOKEN = os.getenv("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")
 FILE_PATH = "main.py"
-# Sử dụng DeepSeek-V3 - "Quái vật" lập trình hiện nay
 MODEL = "deepseek-v3" 
 URL = "https://models.inference.ai.azure.com/chat/completions"
 
 def call_github_model(full_code):
+    if not GITHUB_TOKEN:
+        print("❌ Lỗi: Chưa nạp mã MY_GITHUB_TOKEN vào hệ thống!")
+        return None
+
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Content-Type": "application/json"
     }
     
-    # Sử dụng toàn bộ "tinh hoa" PvP mà bro đã đúc kết
     system_instruction = """You are a senior Roblox Lua developer. 
-    Refine 'MayChemXeoCan V2' based on the technical specs: 
-    Modular architecture, Mobile Delta X optimization, __namecall SilentAim, and 1-4 numeric tool switching.
-    Make the CombatEngine extremely aggressive and predictive.
-    Return ONLY raw Lua code without markdown."""
+    Refine 'MayChemXeoCan V2' with:
+    - Modular architecture
+    - Mobile Delta X optimization
+    - __namecall SilentAim
+    - Pure 1-4 numeric hotkey logic (no inventory scan)
+    Make it aggressive and predictive. Return ONLY raw Lua code."""
 
     data = {
         "messages": [
             {"role": "system", "content": system_instruction},
-            {"role": "user", "content": f"Analyze and upgrade this Blox Fruits script to God-tier:\n{full_code}"}
+            {"role": "user", "content": f"Upgrade this code:\n{full_code}"}
         ],
         "model": MODEL,
         "temperature": 0.2
@@ -37,22 +41,24 @@ def call_github_model(full_code):
         response = requests.post(URL, headers=headers, json=data, timeout=150)
         if response.status_code == 200:
             content = response.json()['choices'][0]['message']['content']
-            # Làm sạch code trả về
             return content.replace("```lua", "").replace("```", "").strip()
         else:
-            print(f"❌ GitHub API Error: {response.status_code} - {response.text}")
+            print(f"❌ GitHub API Error: {response.status_code}")
     except Exception as e:
-        print(f"❌ Lỗi kết nối: {e}")
+        print(f"❌ Exception: {e}")
     return None
 
 def main():
     iteration = 1
+    if not GITHUB_TOKEN:
+        print("❌ BRO CHƯA NHẬP MÃ! Hãy chạy lệnh: export MY_GITHUB_TOKEN=ghp_... && python auto_ai.py")
+        return
+
     while True:
-        print(f"\n🚀 [GITHUB MODELS - {MODEL.upper()}] TIẾN HÓA ĐỢT {iteration}...")
+        print(f"\n🚀 [DEEPSEEK-V3] TIẾN HÓA ĐỢT {iteration}...")
         
-        # Đảm bảo file tồn tại
         if not os.path.exists(FILE_PATH):
-            with open(FILE_PATH, 'w') as f: f.write("-- Initializing MayChemXeoCan V2")
+            with open(FILE_PATH, 'w') as f: f.write("-- MayChemXeoCan V2 Initial")
             
         with open(FILE_PATH, "r", encoding="utf-8") as f:
             full_code = f.read()
@@ -62,26 +68,18 @@ def main():
         if new_script and len(new_script) > 500:
             with open(FILE_PATH, "w", encoding="utf-8") as f:
                 f.write(new_script)
-            print(f"✅ Đợt {iteration}: {MODEL} đã tối ưu xong!")
+            print(f"✅ Đợt {iteration}: Xong!")
             
             try:
                 repo = Repo(".")
-                # Cấu hình user để push không bị lỗi
-                repo.git.config("user.email", "bot@ai.com")
-                repo.git.config("user.name", "AI Evolution Bot")
-                
                 repo.git.add(A=True)
-                repo.index.commit(f"DeepSeek-V3 Evolution {iteration}")
-                
-                # Sử dụng token để push trực tiếp
-                origin = repo.remote(name='origin')
-                origin.push()
-                print("🔥 Đã đẩy code 'Thần Khí' lên GitHub thành công!")
+                repo.index.commit(f"Evolution {iteration}")
+                repo.git.push('origin', 'main')
+                print("🔥 Đã đẩy code lên GitHub!")
             except Exception as e:
-                print(f"⚠️ Git push error: {e}")
+                print(f"⚠️ Git error: {e}")
         
-        # GitHub Models có giới hạn rate limit, nên nghỉ 2 phút là đẹp
-        print(f"💤 Nghỉ 120s để hồi năng lượng...")
+        print("💤 Nghỉ 120s...")
         time.sleep(120)
         iteration += 1
 
