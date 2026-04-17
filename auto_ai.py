@@ -5,7 +5,7 @@ from git import Repo
 
 # --- CONFIGURATION ---
 # Mã GitHub PAT bro vừa cung cấp
-GITHUB_TOKEN = "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"
+GITHUB_TOKEN = "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"
 FILE_PATH = "main.py"
 # Sử dụng DeepSeek-V3 - "Quái vật" lập trình hiện nay
 MODEL = "deepseek-v3" 
