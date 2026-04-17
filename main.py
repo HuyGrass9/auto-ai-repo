@@ -1,7 +1,6 @@
 Here's the completed script with the requested features:
 
 
-
 -- MayChemXeoCan_V2.lua
 
 --- Configuration Section ---
@@ -75,72 +74,58 @@ local function toolDetection()
     local function executeCombo()
         if tool == 1 then
             -- Tool 1 combo
-            -- Example: Tool 1 combo
-            -- game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool1"))
-            -- task.wait(0.5)
-            -- game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2"))
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool1"))
+            task.wait(0.5)
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2"))
+            task.wait(0.5)
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3"))
         elseif tool == 2 then
             -- Tool 2 combo
-            -- Example: Tool 2 combo
-            -- game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2"))
-            -- task.wait(0.5)
-            -- game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3"))
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2"))
+            task.wait(0.5)
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3"))
+            task.wait(0.5)
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4"))
         elseif tool == 3 then
             -- Tool 3 combo
-            -- Example: Tool 3 combo
-            -- game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3"))
-            -- task.wait(0.5)
-            -- game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4"))
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3"))
+            task.wait(0.5)
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4"))
+            task.wait(0.5)
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool1"))
         elseif tool == 4 then
             -- Tool 4 combo
-            -- Example: Tool 4 combo
-            -- game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4"))
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4"))
+            task.wait(0.5)
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool1"))
+            task.wait(0.5)
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2"))
         end
     end
-
-    local function isStunned()
-        return game.Players.LocalPlayer.Character.Humanoid.State == Enum.HumanoidStateType.Dazed or game.Players.LocalPlayer.Character.Humanoid.State == Enum.HumanoidStateType.Unconscious
-    end
-
     local function checkBusy()
-        return game.Players.LocalPlayer.Character.Humanoid.Health <= 0 or game.Players.LocalPlayer.Character.Humanoid.State == Enum.HumanoidStateType.Dead
-    end
-
-    local function combo()
-        if not isStunned() and not checkBusy() then
-            executeCombo()
+        if game.Players.LocalPlayer.Character.Humanoid.Health <= 0 then
+            return true
+        elseif game.Players.LocalPlayer.Character:FindFirstChild("Stunned") then
+            return true
+        elseif game.Players.LocalPlayer.Character:FindFirstChild("Busy") then
+            return true
         end
+        return false
     end
-
-    local function toolSwitch()
-        if cfg.toolSwitch then
-            local tool = cfg.toolSwitch
-            if tool == 1 then
-                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool1"))
-            elseif tool == 2 then
-                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2"))
-            elseif tool == 3 then
-                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3"))
-            elseif tool == 4 then
-                game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4"))
+    local function isStunned()
+        return game.Players.LocalPlayer.Character:FindFirstChild("Stunned")
+    end
+    local function combo()
+        while true do
+            if checkBusy() then
+                task.wait(0.5)
+            else
+                executeCombo()
+                task.wait(0.5)
             end
         end
     end
-
-    local function checkToolSwitch()
-        if cfg.toolSwitch then
-            toolSwitch()
-        end
-    end
-
-    local function combatLoop()
-        while wait() do
-            combo()
-            checkToolSwitch()
-        end
-    end
-
-    task.spawn(combatLoop)
+    task.spawn(combo)
 end
 
 --- Silent Aim Section ---
@@ -159,84 +144,90 @@ local function silentAim()
         end
         return nearestEnemy
     end
-
     local function fireServer(namecall)
         local args = {...}
         if namecall == "FireServer" then
-            local nearestEnemy = getNearestEnemy()
-            if nearestEnemy then
-                local direction = (nearestEnemy.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Unit
-                local firePos = nearestEnemy.Character.HumanoidRootPart.Position + direction * 10
-                table.insert(args, 1, firePos)
-                return namecall(unpack(args))
+            if args[1] == "GetNearestEnemy" then
+                local nearestEnemy = getNearestEnemy()
+                if nearestEnemy then
+                    return nearestEnemy.Character.HumanoidRootPart.Position
+                end
             end
         end
-        return namecall(unpack(args))
+        return namecall(args)
     end
-
-    local function overrideVector3(namecall)
-        local args = {...}
-        if namecall == "Vector3" then
+    local function overrideVector3(vector3)
+        local nearestEnemy = getNearestEnemy()
+        if nearestEnemy then
+            return nearestEnemy.Character.HumanoidRootPart.Position
+        end
+        return vector3
+    end
+    local function overrideCFrame(cframe)
+        local nearestEnemy = getNearestEnemy()
+        if nearestEnemy then
+            return nearestEnemy.Character.HumanoidRootPart.CFrame
+        end
+        return cframe
+    end
+    local function silentAimHook()
+        local oldFireServer = game.ReplicatedStorage.RemoteEvent.FireServer
+        game.ReplicatedStorage.RemoteEvent.FireServer = fireServer
+        local oldGetMousePosition = UserInputService.GetMousePosition
+        UserInputService.GetMousePosition = function()
             local nearestEnemy = getNearestEnemy()
             if nearestEnemy then
-                local direction = (nearestEnemy.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Unit
-                return nearestEnemy.Character.HumanoidRootPart.Position + direction * 10
+                return nearestEnemy.Character.HumanoidRootPart.Position
             end
+            return oldGetMousePosition()
         end
-        return namecall(unpack(args))
-    end
-
-    local function overrideCFrame(namecall)
-        local args = {...}
-        if namecall == "CFrame" then
+        local oldGetMouseLookVector = UserInputService.GetMouseLookVector
+        UserInputService.GetMouseLookVector = function()
             local nearestEnemy = getNearestEnemy()
             if nearestEnemy then
-                local direction = (nearestEnemy.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Unit
-                return CFrame.new(nearestEnemy.Character.HumanoidRootPart.Position + direction * 10)
+                return (nearestEnemy.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Unit
             end
+            return oldGetMouseLookVector()
         end
-        return namecall(unpack(args))
-    end
-
-    local function silentAimLoop()
-        while wait() do
-            fireServer(namecall)
-            overrideVector3(namecall)
-            overrideCFrame(namecall)
+        local oldGetMousePosition2 = UserInputService.GetMousePosition2
+        UserInputService.GetMousePosition2 = function()
+            local nearestEnemy = getNearestEnemy()
+            if nearestEnemy then
+                return nearestEnemy.Character.HumanoidRootPart.Position
+            end
+            return oldGetMousePosition2()
+        end
+        local oldGetMouseLookVector2 = UserInputService.GetMouseLookVector2
+        UserInputService.GetMouseLookVector2 = function()
+            local nearestEnemy = getNearestEnemy()
+            if nearestEnemy then
+                return (nearestEnemy.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Unit
+            end
+            return oldGetMouseLookVector2()
+        end
+        local oldGetMousePosition3 = UserInputService.GetMousePosition3
+        UserInputService.GetMousePosition3 = function()
+            local nearestEnemy = getNearestEnemy()
+            if nearestEnemy then
+                return nearestEnemy.Character.HumanoidRootPart.Position
+            end
+            return oldGetMousePosition3()
+        end
+        local oldGetMouseLookVector3 = UserInputService.GetMouseLookVector3
+        UserInputService.GetMouseLookVector3 = function()
+            local nearestEnemy = getNearestEnemy()
+            if nearestEnemy then
+                return (nearestEnemy.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Unit
+            end
+            return oldGetMouseLookVector3()
         end
     end
-
-    task.spawn(silentAimLoop)
+    silentAimHook()
 end
 
 --- Visuals Section ---
 local function visuals()
     local function billboardGui()
-        local billboard = Instance.new("BillboardGui")
-        billboard.Parent = game.Players.LocalPlayer.Character
-        billboard.Adornee = game.Players.LocalPlayer.Character.HumanoidRootPart
-        billboard.StudsOffset = Vector3.new(0, 2, 0)
-        billboard.AlwaysOnTop = true
-        local textLabel = Instance.new("TextLabel")
-        textLabel.Parent = billboard
-        textLabel.BackgroundTransparency = 1
-        textLabel.Text = "Name"
-        textLabel.TextSize = 14
-        textLabel.TextStrokeTransparency = 0
-        textLabel.TextStrokeColor = Color3.new(1, 1, 1)
-        textLabel.Font = Enum.Font.SourceSans
-        textLabel.TextColor3 = Color3.new(1, 1, 1)
-        textLabel.Size = UDim2.new(0, 100, 0, 20)
-        textLabel.Position = UDim2.new(0, 0, 0, 0)
-        local function updateTextLabel()
-            local nearestEnemy = getNearestEnemy()
-            if nearestEnemy then
-                textLabel.Text = nearestEnemy.Name
-            end
-        end
-        updateTextLabel()
-        task.spawn(function()
-            while wait() do
-                updateTextLabel()
-            end
-        end
+        local billboardGui = Instance.new("BillboardGui")
+        billboardGui.Parent = game.Players.LocalPlayer.PlayerGui
+        billboardGui.Name = "BillboardGui"
