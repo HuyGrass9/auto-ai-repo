@@ -1,7 +1,7 @@
-Here's an optimized version of the provided auto-farm Lua script for Delta X, utilizing keys 1-4.
+Here's the completed script with the requested features:
 
-```lua
--- MayChemXeoCan_V6_DeltaX.lua
+
+-- MayChemXeoCan_V2.lua
 
 --- Configuration Section ---
 local configFile = loadstring(game:HttpGet("https://raw.githubusercontent.com/MayChemXeoCan/BloxAPI/master/config.lua"))()
@@ -18,7 +18,40 @@ local keyBinds = {
     four = Enum.KeyCode.D4,
     exit = Enum.KeyCode.Insert,
     fight = Enum.KeyCode.F,
+    tool1 = Enum.KeyCode.E,
+    tool2 = Enum.KeyCode.R,
+    tool3 = Enum.KeyCode.T,
+    tool4 = Enum.KeyCode.Y,
 }
+
+--- UI Section ---
+local gethui = loadstring(game:HttpGet("https://raw.githubusercontent.com/MayChemXeoCan/BloxAPI/master/UI.lua"))()
+local ui = gethui("MayChemXeoCan V2")
+local tab = ui:Tab("Combat")
+local combatTab = tab:Tab("Tool Detection")
+local silentAimTab = tab:Tab("Silent Aim")
+local visualsTab = tab:Tab("Visuals")
+local settingsTab = tab:Tab("Settings")
+
+local function saveConfig()
+    local file = game:GetService("Filesystem").FileService
+    local data = {}
+    for k, v in pairs(cfg) do
+        data[k] = v
+    end
+    file:SetCustomContentType("application/json")
+    file:WriteText("MCXC_V2.json", json.encode(data))
+end
+
+local function loadConfig()
+    local file = game:GetService("Filesystem").FileService
+    local data = file:ReadText("MCXC_V2.json")
+    if data then
+        cfg = json.decode(data)
+    end
+end
+
+loadConfig()
 
 --- Movement Functionality Section ---
 local player = game.Players.LocalPlayer
@@ -38,6 +71,7 @@ local fightDistance = 500
 local fruitPositions = {}
 local pickedFruits = {}
 local farms = {}
+local tool = 1
 
 --- Local Functions Section ---
 local function walkToPos(pos, callback)
@@ -73,6 +107,68 @@ local function pickFruit(fruitPos)
     end)
 end
 
+local function toolDetection()
+    local tool1 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool1")
+    local tool2 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2")
+    local tool3 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3")
+    local tool4 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4")
+    if tool1 and tool2 and tool3 and tool4 then
+        if tool == 1 then
+            tool1.Equipped:Fire()
+            tool2.Equipped:Fire()
+            tool3.Equipped:Fire()
+            tool4.Equipped:Fire()
+        elseif tool == 2 then
+            tool1.Equipped:Fire()
+            tool2.Equipped:Fire()
+            tool3.Equipped:Fire()
+            tool4.Equipped:Fire()
+        elseif tool == 3 then
+            tool1.Equipped:Fire()
+            tool2.Equipped:Fire()
+            tool3.Equipped:Fire()
+            tool4.Equipped:Fire()
+        elseif tool == 4 then
+            tool1.Equipped:Fire()
+            tool2.Equipped:Fire()
+            tool3.Equipped:Fire()
+            tool4.Equipped:Fire()
+        end
+    end
+end
+
+local function executeCombo()
+    local combo = "3XZ1CZ2ZX"
+    for i = 1, #combo do
+        local char = combo:sub(i, i)
+        if char == "X" then
+            toolDetection()
+        elseif char == "Z" then
+            local tool = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool" .. char)
+            if tool then
+                tool.Equipped:Fire()
+            end
+        elseif char == "1" then
+            tool = 1
+        elseif char == "2" then
+            tool = 2
+        elseif char == "3" then
+            tool = 3
+        elseif char == "4" then
+            tool = 4
+        end
+        wait(0.1)
+    end
+end
+
+local function isStunned()
+    return character.HumanoidRootPart.Anchored or character.HumanoidRootPart.CFrame == CFrame.new(0, 0, 0)
+end
+
+local function checkBusy()
+    return character.HumanoidRootPart.Anchored or character.HumanoidRootPart.CFrame == CFrame.new(0, 0, 0)
+end
+
 --- Event Script Section ---
 game:GetService("RunService").RenderStepped:Connect(function()
     if cfg.farmMode then
@@ -97,99 +193,49 @@ game:GetService("RunService").RenderStepped:Connect(function()
                     end
                 end
             end)
-        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.three) then
-            currentFarm = {x = 0, y = currentFarm.y - cfg.farmSize, size = cfg.farmSize}
-            walkToPos(position + Vector3.new(currentFarm.x, currentFarm.y, 0), function()
-                if character then
-                    for i = currentFarm.y, currentFarm.y + currentFarm.size do
-                        for j = currentFarm.x, currentFarm.x + currentFarm.size do
-                            farms[j*10+i*100] = true
-                        end
+        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.fight) then
+            fight = not fight
+        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.tool1) then
+            tool = 1
+        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.tool2) then
+            tool = 2
+        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.tool3) then
+            tool = 3
+        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.tool4) then
+            tool = 4
+        end
+        
+        -- Handle tool detection
+        if toolDetection() then
+            executeCombo()
+        end
+        
+        -- Handle silent aim
+        if silentAimTab:GetValue("enabled") then
+            local nearestEnemy = nil
+            for i, v in pairs(game.Players:GetPlayers()) do
+                if v ~= player and v.Character then
+                    local distance = (v.Character.HumanoidRootPart.Position - character.HumanoidRootPart.Position).Magnitude
+                    if not nearestEnemy or distance < nearestEnemy then
+                        nearestEnemy = v
                     end
                 end
-            end)
-        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.four) then
-            currentFarm = {x = 0, y = currentFarm.y + cfg.farmSize, size = cfg.farmSize}
-            walkToPos(position + Vector3.new(currentFarm.x, currentFarm.y, 0), function()
-                if character then
-                    for i = currentFarm.y, currentFarm.y + currentFarm.size do
-                        for j = currentFarm.x, currentFarm.x + currentFarm.size do
-                            farms[j*10+i*100] = true
-                        end
-                    end
-                end
-            end)
-        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.exit) then
-            game:GetService("StarterGui"):SetGuiEnabled(Enum.KeyCodeInserted, true)
-            wait(1)
-            game:GetService("StarterGui"):SetGuiEnabled(Enum.KeyCodeInserted, false)
-            local GUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/MayChemXeoCan/BloxAPI/master/HubUI.lua"))()
-            GUI:PromptClose()
-            wait(1)
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/MayChemXeoCan/BloxAPI/master/config.lua"))()
-            cfg = {}
-            for k, v in pairs(configFile) do
-                cfg[k] = v
+            end
+            if nearestEnemy then
+                local nearestEnemyPosition = nearestEnemy.Character.HumanoidRootPart.Position
+                character.HumanoidRootPart.CFrame = CFrame.new(character.HumanoidRootPart.Position, nearestEnemyPosition)
             end
         end
         
-        -- Update farms
-        local function updateFarm()
-            for i, v in pairs(farms) do
-                if (position + Vector3.new(i%10*cfg.farmSize/10, i/10*100, 0)) - character.HumanoidRootPart.Position).Magnitude < cfg.farmSize then
-                    pickedFruits[i] = true
-                    farms[i] = false
-                    fruitPositions = {}
-                end
-            end
-        end
-        updateFarm()
-        
-        -- Pick fruits
-        for i, v in pairs(pickedFruits) do
-            if farms[i] then
-                local fruitPos = position + Vector3.new(i%10*cfg.farmSize/10, i/10*100, 0)
-                pickFruit(fruitPos)
-            end
-        end
-        
-        -- Check fight
-        if checkFight() then
-            fight = true
-        elseif fight then
-            fight = false
-        end
-        
-        -- Print farms
-        for i = 0, math.floor((position.x)/cfg.farmSize) do
-            print(string.rep(' ', math.floor(i/cfg.farmSize)) .. string.rep('#', math.floor(cfg.farmSize/i)))
-        end
-        print(' ' .. string.rep(' ', math.floor(position.x/cfg.farmSize)) .. '|')
-
-        wait(0.5)
-    end
-end)
-```
-Here are a few optimizations made:
-
-1.   I used the modulo operator to calculate the `x` coordinate of each farm position. This allows us to easily calculate the position and size of each farm in the x-axis.
-
-2.   I added a `callback` function to the `walkToPos` function. This allows us to perform a specific action after the character has walked to the desired position.
-
-3.   I modified the `checkFight` function to check the distance between the character and each fruit in the `fruitPositions` table.
-
-4.   I added a check to see if the character is still in position after walking to the desired position. This prevents the character from moving off-screen while walking.
-
-5.   I modified the `pickFruit` function to use a loop to walk to the fruit position.
-
-6.   I added a function `updateFarm` to update the positions of the farms. This function is called every 0.5 seconds.
-
-7.   I modified the farming logic to pick fruits in the order they are added to the `farms` table.
-
-8.   I added a check to see if the `farms` table is empty. If it is, we print out a message saying that there are no farms.
-
-9.   I added a check to see if the game is in debug mode. If it is, we print out a message saying that we are in debug mode.
-
-10. I modified the key press handling to use a single `if` statement for each key, and to update the game state accordingly.
-
-Note that these are just a few of the optimizations that could be made to this script. The script could likely be optimized further to improve performance and reduce memory usage.
+        -- Handle visuals
+        if visualsTab:GetValue("enabled") then
+            local billboardGui = Instance.new("BillboardGui")
+            billboardGui.Parent = character.HumanoidRootPart
+            billboardGui.Adornee = character.HumanoidRootPart
+            billboardGui.StudsOffset = Vector3.new(0, 2, 0)
+            billboardGui.Name = "BillboardGui"
+            local textLabel = Instance.new("TextLabel")
+            textLabel.Parent = billboardGui
+            textLabel.Text = "Name: " .. player.Name .. "\nHealth: " .. character.Humanoid.Health .. "\nLevel: " .. player.Level .. "\nWeapon: " .. tool
+            textLabel.Size = UDim2.new(0, 200, 0, 100)
+            textLabel.BackgroundTransparency = 1
