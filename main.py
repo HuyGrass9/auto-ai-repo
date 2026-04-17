@@ -1,21 +1,24 @@
 local Services = {}
-Services:GetService = function(serviceName)
-    return game:GetService(serviceName)
-end
+Services.Players = game:GetService("Players")
+Services.ReplicatedStorage = game:GetService("ReplicatedStorage")
+Services.Workspace = game:GetService("Workspace")
+Services.Http = game:GetService("HttpService")
+Services.RunService = game:GetService("RunService")
 
 local Config = {}
-Config.requiredItems = {"item1", "item2", "item3"}
+Config.ItemName = "MayChemXeoCanV2"
+Config.RequiredItems = {"Item1", "Item2"}
 
 local State = {}
-State.isItemActivated = false
 State.isPlayerInCombat = false
+State.isItemActivated = false
 
 local Cache = {}
 Cache.item = nil
 
 local Utils = {}
-Utils.tableContains = function(table, value)
-    for _, v in pairs(table) do
+Utils.tableContains = function(t, value)
+    for _, v in pairs(t) do
         if v == value then
             return true
         end
@@ -26,89 +29,80 @@ end
 local CombatEngine = {}
 CombatEngine.isPlayerInCombat = function(player)
     -- Implement combat logic here
-    return State.isPlayerInCombat
+    return false
 end
 
 local SilentAim = {}
 SilentAim.isSilentAimEnabled = false
+SilentAim.enableSilentAim = function()
+    SilentAim.isSilentAimEnabled = true
+end
+SilentAim.disableSilentAim = function()
+    SilentAim.isSilentAimEnabled = false
+end
 
 local Visuals = {}
 Visuals.displayMessage = function(message)
-    -- Implement message display logic here
+    -- Display a message to the player
     print(message)
 end
 
 local LagFixer = {}
 LagFixer.fixLag = function()
     -- Implement lag fixing logic here
-    local lagFixer = Instance.new("Script")
-    lagFixer.Name = "LagFixer"
-    lagFixer.Parent = game.Workspace
-    lagFixer.Source = [[
-        while true do
-            wait(0.1)
-            game.Players.LocalPlayer.Character.HumanoidRootPart.Anchored = true
-            game.Players.LocalPlayer.Character.HumanoidRootPart.Anchored = false
-        end
-    ]]
 end
 
 local FakeLag = {}
 FakeLag.createFakeLag = function()
     -- Implement fake lag logic here
-    local fakeLag = Instance.new("Script")
-    fakeLag.Name = "FakeLag"
-    fakeLag.Parent = game.Workspace
-    fakeLag.Source = [[
-        while true do
-            wait(1)
-            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1)
-        end
-    ]]
 end
 
 local MaruUI = {}
-MaruUI.displayMessage = function(message)
-    -- Implement message display logic here
-    print(message)
-end
-
-local function checkRequiredItems()
-    local hasRequiredItems = true
-    for _, item in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
-        if not Utils.tableContains(Config.requiredItems, item.Name) then
-            hasRequiredItems = false
-            break
-        end
-    end
-    return hasRequiredItems
-end
-
-local function handleItemActivation()
-    if checkRequiredItems() then
-        State.isItemActivated = true
-        -- Add your item's functionality here
-        Visuals.displayMessage("MayChemXeoCanV2 activated!")
-    else
-        -- Display an error message to the player
-        Visuals.displayMessage("You don't have the required items to use MayChemXeoCanV2.")
-    end
+MaruUI.createUI = function()
+    -- Create a UI for the item
 end
 
 local function createItem()
     if Cache.item then return end
-    -- Create a new instance of the MayChemXeoCanV2 item
-    Cache.item = Instance.new("Tool")
-    Cache.item.Name = "MayChemXeoCanV2"
-    Cache.item.Parent = game.Players.LocalPlayer.Backpack
+    if not game.Players.LocalPlayer.Backpack:FindFirstChild(Config.ItemName) then
+        -- Check if the player's backpack is full
+        if game.Players.LocalPlayer.Backpack.MaxChildrenReached then
+            Visuals.displayMessage("Your backpack is full!")
+            return
+        end
+        -- Create a new instance of the MayChemXeoCanV2 item
+        Cache.item = Instance.new("Tool")
+        Cache.item.Name = Config.ItemName
+        Cache.item.Parent = game.Players.LocalPlayer.Backpack
 
-    -- Add a script to the item to handle its functionality
-    local script = Instance.new("LocalScript")
-    script.Name = "MayChemXeoCanV2Script"
-    script.Parent = Cache.item
+        -- Add a script to the item to handle its functionality
+        local script = Instance.new("LocalScript")
+        script.Name = Config.ItemName .. "Script"
+        script.Parent = Cache.item
 
-    -- Connect the script to the item's activation event
-    script.Activated:Connect(handleItemActivation)
+        -- Connect the script to the item's activation event
+        script.Activated:Connect(handleItemActivation)
+    end
+end
+
+local function handleItemActivation()
+    if State.isItemActivated then return end
+    -- Check if the player has the required items
+    local hasRequiredItems = true
+    for _, item in pairs(Config.RequiredItems) do
+        if not game.Players.LocalPlayer.Backpack:FindFirstChild(item) then
+            hasRequiredItems = false
+            break
+        end
+    end
+    if not hasRequiredItems then
+        -- Display an error message to the player
+        Visuals.displayMessage("You don't have the required items to use " .. Config.ItemName)
+        return
+    end
+    -- Activate the item
+    State.isItemActivated = true
+    Visuals.displayMessage("MayChemXeoCanV2 activated!")
 end
 
 local function handleCombat()
@@ -122,32 +116,37 @@ end
 local function handleSilentAim()
     if SilentAim.isSilentAimEnabled then
         -- Implement silent aim logic here
+        -- For example:
+        -- local player = game.Players.LocalPlayer
+        -- local character = player.Character
+        -- local camera = character:WaitForChild("Head"):WaitForChild("Camera")
+        -- camera.CFrame = character.HumanoidRootPart.CFrame + (character.HumanoidRootPart.CFrame.LookVector * 10)
     end
 end
 
 local function drawItem()
     -- Implement item drawing logic here
-end
-
-local function lagFix()
-    LagFixer.fixLag()
-end
-
-local function fakeLag()
-    FakeLag.createFakeLag()
+    -- For example:
+    -- local player = game.Players.LocalPlayer
+    -- local character = player.Character
+    -- local part = character:WaitForChild("Head")
+    -- part.Anchored = true
+    -- part.Transparency = 0.5
+    -- part.BrickColor = BrickColor.new("Bright blue")
 end
 
 local function update()
     handleCombat()
     handleSilentAim()
     drawItem()
-    lagFix()
-    fakeLag()
 end
 
-while true do
-    update()
-    wait()
+local function loop()
+    while true do
+        update()
+        wait()
+    end
 end
 
 createItem()
+loop()
