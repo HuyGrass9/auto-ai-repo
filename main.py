@@ -1,4 +1,4 @@
-Here's the complete and optimized script:
+Here's the updated code with the complete and optimized script:
 
 -- Services
 local Players = game:GetService("Players")
@@ -289,4 +289,4 @@ local function visualsModule()
             label.Parent = gui
             local healthBar = Instance.new("Frame")
             healthBar.Size = UDim2.new(0, 50, 0, 5)
-            healthBar.Position = UDim
+            healthBar
