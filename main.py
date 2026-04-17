@@ -120,14 +120,22 @@ script.Activated:Connect(function()
         end
     end
 
-    if hasRequiredItems then
-        -- Add your item's functionality here
-        print("MayChemXeoCanV2 activated!")
-    else
-        -- Display an error message to the player
-        game.StarterGui:SetCore("ChatMakeSystemMessage", {
-            Text = "You don't have the required items to use MayChemXeoCanV2.",
-            Color = Color3.new(1, 0, 0),
-        })
-    end
-end)
+    if hasRequiredItems the
+-- IMPROVED ENDING
+if table.find(requiredItems, item.Name) then
+    hasRequiredItems = false
+    break
+end
+
+if hasRequiredItems then
+    -- Add your item's functionality here
+    print("MayChemXeoCanV2 activated!")
+else
+    -- Display an error message to the player
+    game.StarterGui:SetCore("ChatMakeSystemMessage", {
+        Text = "You don't have the required items to use MayChemXeoCanV2.",
+        Color = Color3.new(1, 0, 0),
+    })
+end
+
+This improved code snippet removes the unnecessary `end` statement at the end of the script. The `end` statement is used to denote the end of a block of code in Lua, but in this case, it's not needed because the `if` statement already has its own `end` statement.
