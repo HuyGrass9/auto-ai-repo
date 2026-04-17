@@ -1,4 +1,4 @@
-Here's the full and optimized script with performance, readability, and bug fixes improvements.
+Here's the complete and optimized script:
 
 -- Services
 local Players = game:GetService("Players")
@@ -14,6 +14,11 @@ local cfg = {
     autoCombo = false,
     silentAim = false,
     visuals = false,
+    hold_1 = 0,
+    hold_2 = 0,
+    hold_3 = 0,
+    hold_4 = 0,
+    silentAimDirectionalSkills = {"1", "2", "3", "4"},
 }
 
 local function loadConfig()
@@ -37,15 +42,18 @@ local state = {
     stunned = false,
     busy = false,
     nearestEnemy = nil,
+    lockedTarget = false,
 }
 
 -- Cache
 local cache = {
+    toolTypes = {},
     tool1 = nil,
     tool2 = nil,
     tool3 = nil,
     tool4 = nil,
     nearestEnemy = nil,
+    silentAimTarget = nil,
 }
 
 -- Utils
@@ -82,6 +90,19 @@ local function distSq(pos1, pos2)
     return (pos1 - pos2).Magnitude ^ 2
 end
 
+local function isAlly(player)
+    for _, character in pairs(player.Character:GetChildren()) do
+        if character:IsA("Model") then
+            for _, humanoid in pairs(character:GetChildren()) do
+                if humanoid:IsA("Humanoid") and humanoid.Parent == Players.LocalPlayer.Character then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
 -- Combat Engine Module
 local function combatEngineModule()
     local function toolDetection()
@@ -92,12 +113,16 @@ local function combatEngineModule()
         local function checkTool()
             if tool1 and tool1.Equipped then
                 state.tool = 1
+                cache.toolTypes[1] = "1"
             elseif tool2 and tool2.Equipped then
                 state.tool = 2
+                cache.toolTypes[2] = "2"
             elseif tool3 and tool3.Equipped then
                 state.tool = 3
+                cache.toolTypes[3] = "3"
             elseif tool4 and tool4.Equipped then
                 state.tool = 4
+                cache.toolTypes[4] = "4"
             end
         end
         checkTool()
@@ -152,28 +177,45 @@ end
 
 -- Silent Aim Module
 local function silentAimModule()
-    local function fireServer(namecall)
-        local args = {...}
-        if namecall == "FireServer" and args[1] == "GetNearestEnemy" then
-            local nearestEnemy = nil
-            local minDistance = math.huge
+    local function __namecall(namecall, ...)
+        if namecall == "FireServer" and table.find(cfg.silentAimDirectionalSkills, ...) then
+            local args = {...}
+            local target = nil
             for _, player in pairs(Players:GetPlayers()) do
                 if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
                     local distance = (Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                    if distance < minDistance then
-                        minDistance = distance
-                        nearestEnemy = player
+                    if distance < 500 then
+                        target = player
+                        break
                     end
                 end
             end
-            if nearestEnemy then
-                args[2] = nearestEnemy.Character.HumanoidRootPart.Position
+            if target then
+                args[2] = (target.Character.HumanoidRootPart.Position - Players.LocalPlayer.Character.HumanoidRootPart.Position).Unit
+                return namecall(unpack(args))
+            else
+                return namecall(unpack(args))
+            end
+        elseif namecall == "FireServer" and (table.find({"1", "2", "3", "4"}, ...) or table.find({"shoot", "fire", "cast", "skill"}, ...)) then
+            local args = {...}
+            local target = nil
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+                    local distance = (Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                    if distance < 500 then
+                        target = player
+                        break
+                    end
+                end
+            end
+            if target then
+                args[2] = target.Character.HumanoidRootPart.Position
                 return namecall(unpack(args))
             else
                 return namecall(unpack(args))
             end
         else
-            return namecall(unpack(args))
+            return namecall(...)
         end
     end
 
@@ -200,6 +242,15 @@ local function silentAimModule()
             return nil
         end
     end
+
+    local function getSilentAimTarget()
+        local nearestEnemy = getNearestEnemy()
+        if nearestEnemy then
+            return nearestEnemy.Character.HumanoidRootPart.Position
+        else
+            return nil
+        end
+    end
 end
 
 -- Visuals Module
@@ -219,72 +270,23 @@ local function visualsModule()
         updateAim()
         RunService.RenderStepped:Connect(updateAim)
     end
-end
 
--- Lag Fixer Module
-local function lagFixerModule()
-    local function fixLag()
-        RunService.RenderStepped:DisconnectAll()
-        RunService.RenderStepped:Connect(function()
-            if Players.LocalPlayer.Character then
-                task.wait(0.01)
-            else
-                task.wait(0.1)
-            end
-        end)
-    end
-    fixLag()
-end
-
--- Fake Lag Module
-local function fakeLagModule()
-    local function applyFakeLag()
-        RunService.RenderStepped:DisconnectAll()
-        RunService.RenderStepped:Connect(function()
-            if cfg.fakeLag then
-                task.wait(cfg.fakeLag)
-            end
-        end)
-    end
-    applyFakeLag()
-end
-
--- Maru UI Module
-local function maruUIModule()
-    local function createGUI()
-        local gui = Instance.new("ScreenGui")
-        gui.Name = "MayChemXeoCanV2"
-        gui.Parent = Players.LocalPlayer.PlayerGui
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(1, 0, 1, 0)
-        frame.Position = UDim2.new(0, 0, 0, 0)
-        frame.Parent = gui
-        local title = Instance.new("TextLabel")
-        title.Text = "MayChemXeoCan V2"
-        title.Size = UDim2.new(0, 200, 0, 30)
-        title.Position = UDim2.new(0, 10, 0, 10)
-        title.Parent = frame
-        local settings = Instance.new("Frame")
-        settings.Size = UDim2.new(0, 200, 0, 100)
-        settings.Position = UDim2.new(0, 10, 0, 50)
-        settings.Parent = frame
-        local saveButton = Instance.new("TextButton")
-        saveButton.Text = "Save Config"
-        saveButton.Size = UDim2.new(0, 100, 0, 30)
-        saveButton.Position = UDim2.new(0, 10, 0, 10)
-        saveButton.Parent = settings
-        saveButton.MouseButton1Down:Connect(function()
-            cfg.save = true
-        end)
-        local loadButton = Instance.new("TextButton")
-        loadButton.Text = "Load Config"
-        loadButton.Size = UDim2.new(0, 100, 0, 30)
-        loadButton.Position = UDim2.new(0, 10, 0, 50)
-        loadButton.Parent = settings
-        loadButton.MouseButton1Down:Connect(function()
-            loadConfig()
-        end)
-        local autoComboButton = Instance.new("TextButton")
-        autoComboButton.Text = "Auto Combo"
-        autoComboButton.Size = UDim2.new(0, 100, 0, 30)
-        autoComboButton.Position = UDim2.new(0, 10
+    local function drawEsp(part)
+        local function updateEsp()
+            local name = part.Name
+            local health = part.Health
+            local level = part.Level
+            local distance = (part.Position - Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+            local heldWeapon = part:GetChildren()[4].Name
+            local gui = Instance.new("BillboardGui")
+            gui.Parent = part
+            gui.ResetOnSpawn = false
+            gui.Name = "EspGui"
+            local label = Instance.new("TextLabel")
+            label.Text = name
+            label.Size = UDim2.new(0, 50, 0, 20)
+            label.Position = UDim2.new(0, 0, 0, 0)
+            label.Parent = gui
+            local healthBar = Instance.new("Frame")
+            healthBar.Size = UDim2.new(0, 50, 0, 5)
+            healthBar.Position = UDim
