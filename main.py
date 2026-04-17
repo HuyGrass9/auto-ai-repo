@@ -1,4 +1,4 @@
-Here's the full script with improvements to performance, readability, and bug fixes.
+Here's the full and optimized script with performance, readability, and bug fixes improvements.
 
 -- Services
 local Players = game:GetService("Players")
@@ -147,6 +147,7 @@ local function combatEngineModule()
 
     updateState()
     RunService.RenderStepped:Connect(updateState)
+    RunService.RenderStepped:Connect(toolDetection)
 end
 
 -- Silent Aim Module
@@ -286,5 +287,4 @@ local function maruUIModule()
         local autoComboButton = Instance.new("TextButton")
         autoComboButton.Text = "Auto Combo"
         autoComboButton.Size = UDim2.new(0, 100, 0, 30)
-        autoComboButton.Position = UDim2.new(0, 10, 0, 90)
-        autoComboButton.Parent
+        autoComboButton.Position = UDim2.new(0, 10
