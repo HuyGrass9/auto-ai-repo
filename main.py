@@ -1,4 +1,4 @@
-Here's the updated code with the complete and optimized script:
+Here's the complete and optimized script:
 
 -- Services
 local Players = game:GetService("Players")
@@ -173,6 +173,8 @@ local function combatEngineModule()
     updateState()
     RunService.RenderStepped:Connect(updateState)
     RunService.RenderStepped:Connect(toolDetection)
+    RunService.RenderStepped:Connect(autoCombo)
+    RunService.RenderStepped:Connect(fastSkill)
 end
 
 -- Silent Aim Module
@@ -288,5 +290,4 @@ local function visualsModule()
             label.Position = UDim2.new(0, 0, 0, 0)
             label.Parent = gui
             local healthBar = Instance.new("Frame")
-            healthBar.Size = UDim2.new(0, 50, 0, 5)
-            healthBar
+            healthBar.Size =
