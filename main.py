@@ -10,7 +10,10 @@ local Game = game
 -- Config
 local cfg = {
     save = false,
-    fakeLag = 0
+    fakeLag = 0,
+    autoCombo = false,
+    silentAim = false,
+    visuals = false,
 }
 
 local function loadConfig()
@@ -103,6 +106,11 @@ local function combatEngineModule()
     local function autoCombo()
         while true do
             toolDetection()
+            if cfg.autoCombo then
+                state.combo = true
+            else
+                state.combo = false
+            end
             task.wait(0.5)
         end
     end
@@ -275,21 +283,8 @@ local function maruUIModule()
         loadButton.MouseButton1Down:Connect(function()
             loadConfig()
         end)
-        makeDraggable(gui)
-    end
-    createGUI()
-end
-
--- Main
-local function main()
-    combatEngineModule()
-    silentAimModule()
-    visualsModule()
-    lagFixerModule()
-    fakeLagModule()
-    maruUIModule()
-end
-
-main()
-
-This script includes all the required modules and features a main function that runs all of them. It also includes a configuration system using a JSON file, and a GUI that allows the user to save and load their configuration. The script also includes a lag fixer and fake lag
+        local autoComboButton = Instance.new("TextButton")
+        autoComboButton.Text = "Auto Combo"
+        autoComboButton.Size = UDim2.new(0, 100, 0, 30)
+        autoComboButton.Position = UDim2.new(0, 10, 0, 90)
+        autoComboButton.Parent
