@@ -34,208 +34,235 @@ local visualsTab = tab:Tab("Visuals")
 local settingsTab = tab:Tab("Settings")
 
 local function saveConfig()
-    local file = game:GetService("Filesystem").FileService
+    local file = game:GetService("Fileservice").Game:GetService("DataStoreService"):GetDataStore("MCXC_V2")
     local data = {}
     for k, v in pairs(cfg) do
         data[k] = v
     end
-    file:SetCustomContentType("application/json")
-    file:WriteText("MCXC_V2.json", json.encode(data))
+    file:SetAsync("MCXC_V2", data)
 end
 
 local function loadConfig()
-    local file = game:GetService("Filesystem").FileService
-    local data = file:ReadText("MCXC_V2.json")
+    local file = game:GetService("Fileservice").Game:GetService("DataStoreService"):GetDataStore("MCXC_V2")
+    local data = file:GetAsync("MCXC_V2")
     if data then
-        cfg = json.decode(data)
+        cfg = data
     end
 end
 
 loadConfig()
 
---- Movement Functionality Section ---
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local stance = 1
-local walkSpeed = 200
-local jumpForce = 50
-local position = Vector3.new(0, cfg.farmHeight, 0)
-local farmSize = Vector3.new(cfg.farmSize, 100, cfg.farmSize)
-local characterHit = false
-local currentFarm = {x = 0, y = cfg.farmSize, size = cfg.farmSize}
-local camera = game.Workspace.CurrentCamera
-
---- Farming Functionality Section ---
-local fight = false
-local fightDistance = 500
-local fruitPositions = {}
-local pickedFruits = {}
-local farms = {}
-local tool = 1
-
---- Local Functions Section ---
-local function walkToPos(pos, callback)
-    camera.CFrame = camera.CFrame * CFrame.new(0, 0, -5)
-    character:MoveTo(pos, walkSpeed)
-    local function checkPos()
-        if character.HumanoidRootPart.Position ~= pos then
-            return false
-        else
-            callback()
-            return true
-        end
-    end
-    while not checkPos() do
-        wait()
-    end
-end
-
-local function checkFight()
-    for i, v in pairs(fruitPositions) do
-        if (v - character.HumanoidRootPart.Position).Magnitude < fightDistance then
-            return true
-        end
-    end
-    return false
-end
-
-local function pickFruit(fruitPos)
-    walkToPos(fruitPos, function()
-        if character then
-            game.ReplicatedStorage.Fruit:FireServer(fruitPos.Position)
-        end
-    end)
-end
-
+--- Combat Engine Section ---
 local function toolDetection()
     local tool1 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool1")
     local tool2 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool2")
     local tool3 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool3")
     local tool4 = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4")
-    if tool1 and tool2 and tool3 and tool4 then
+    local tool = 1
+    local function checkTool()
+        if tool1 and tool1.Equipped then
+            tool = 1
+        elseif tool2 and tool2.Equipped then
+            tool = 2
+        elseif tool3 and tool3.Equipped then
+            tool = 3
+        elseif tool4 and tool4.Equipped then
+            tool = 4
+        end
+    end
+    checkTool()
+    local function executeCombo()
         if tool == 1 then
-            tool1.Equipped:Fire()
-            tool2.Equipped:Fire()
-            tool3.Equipped:Fire()
-            tool4.Equipped:Fire()
+            -- Tool 1 combo
         elseif tool == 2 then
-            tool1.Equipped:Fire()
-            tool2.Equipped:Fire()
-            tool3.Equipped:Fire()
-            tool4.Equipped:Fire()
+            -- Tool 2 combo
         elseif tool == 3 then
-            tool1.Equipped:Fire()
-            tool2.Equipped:Fire()
-            tool3.Equipped:Fire()
-            tool4.Equipped:Fire()
+            -- Tool 3 combo
         elseif tool == 4 then
-            tool1.Equipped:Fire()
-            tool2.Equipped:Fire()
-            tool3.Equipped:Fire()
-            tool4.Equipped:Fire()
+            -- Tool 4 combo
         end
     end
-end
-
-local function executeCombo()
-    local combo = "3XZ1CZ2ZX"
-    for i = 1, #combo do
-        local char = combo:sub(i, i)
-        if char == "X" then
-            toolDetection()
-        elseif char == "Z" then
-            local tool = game.Players.LocalPlayer.Backpack:FindFirstChild("Tool" .. char)
-            if tool then
-                tool.Equipped:Fire()
-            end
-        elseif char == "1" then
-            tool = 1
-        elseif char == "2" then
-            tool = 2
-        elseif char == "3" then
-            tool = 3
-        elseif char == "4" then
-            tool = 4
-        end
-        wait(0.1)
+    local function isStunned()
+        return character.Humanoid.State == Enum.HumanoidStateType.Dazed or character.Humanoid.State == Enum.HumanoidStateType.Unconscious
     end
-end
-
-local function isStunned()
-    return character.HumanoidRootPart.Anchored or character.HumanoidRootPart.CFrame == CFrame.new(0, 0, 0)
-end
-
-local function checkBusy()
-    return character.HumanoidRootPart.Anchored or character.HumanoidRootPart.CFrame == CFrame.new(0, 0, 0)
-end
-
---- Event Script Section ---
-game:GetService("RunService").RenderStepped:Connect(function()
-    if cfg.farmMode then
-        camera.CFrame = camera.CFrame * CFrame.new(0, 0, -5)
-        
-        -- Handle key presses
-        if game:GetService("UserInputService"):IsKeyDown(keyBinds.one) then
-            currentFarm = {x = currentFarm.x - cfg.farmSize, y = cfg.farmSize, size = cfg.farmSize}
-            walkToPos(position + Vector3.new(-currentFarm.x, 0, currentFarm.y), function()
-                if character then
-                    for i = currentFarm.x, currentFarm.x + currentFarm.size do
-                        farms[i] = true
-                    end
-                end
-            end)
-        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.two) then
-            currentFarm = {x = currentFarm.x + cfg.farmSize, y = cfg.farmSize, size = cfg.farmSize}
-            walkToPos(position + Vector3.new(currentFarm.x, 0, currentFarm.y), function()
-                if character then
-                    for i = currentFarm.x, currentFarm.x + currentFarm.size do
-                        farms[i] = true
-                    end
-                end
-            end)
-        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.fight) then
-            fight = not fight
-        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.tool1) then
-            tool = 1
-        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.tool2) then
-            tool = 2
-        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.tool3) then
-            tool = 3
-        elseif game:GetService("UserInputService"):IsKeyDown(keyBinds.tool4) then
-            tool = 4
-        end
-        
-        -- Handle tool detection
-        if toolDetection() then
-            executeCombo()
-        end
-        
-        -- Handle silent aim
-        if silentAimTab:GetValue("enabled") then
-            local nearestEnemy = nil
-            for i, v in pairs(game.Players:GetPlayers()) do
-                if v ~= player and v.Character then
-                    local distance = (v.Character.HumanoidRootPart.Position - character.HumanoidRootPart.Position).Magnitude
-                    if not nearestEnemy or distance < nearestEnemy then
-                        nearestEnemy = v
-                    end
-                end
+    local function checkBusy()
+        return character.HumanoidRootPart.Velocity.Magnitude > 0 or character.Humanoid.JumpPower > 0
+    end
+    local function combatLoop()
+        while wait() do
+            if checkTool() then
+                executeCombo()
             end
+            if isStunned() then
+                wait(1)
+            elseif checkBusy() then
+                wait(1)
+            else
+                executeCombo()
+            end
+        end
+    end
+    task.spawn(combatLoop)
+end
+
+--- Silent Aim Section ---
+local function silentAim()
+    local function fireServer(namecall)
+        local args = {...}
+        if namecall == "FireServer" and args[1] == "Attack" then
+            local target = args[2]
+            local function getNearestEnemy()
+                local nearestEnemy = nil
+                local nearestDistance = math.huge
+                for _, player in pairs(game.Players:GetPlayers()) do
+                    if player ~= game.Players.LocalPlayer and player.Character then
+                        local distance = (player.Character.HumanoidRootPart.Position - character.HumanoidRootPart.Position).Magnitude
+                        if distance < nearestDistance then
+                            nearestEnemy = player
+                            nearestDistance = distance
+                        end
+                    end
+                end
+                return nearestEnemy
+            end
+            local nearestEnemy = getNearestEnemy()
             if nearestEnemy then
-                local nearestEnemyPosition = nearestEnemy.Character.HumanoidRootPart.Position
-                character.HumanoidRootPart.CFrame = CFrame.new(character.HumanoidRootPart.Position, nearestEnemyPosition)
+                args[2] = nearestEnemy.Character.HumanoidRootPart.Position
+                return namecall(unpack(args))
+            else
+                return namecall(unpack(args))
+            end
+        else
+            return namecall(unpack(args))
+        end
+    end
+    local function __namecall(func, ...)
+        return fireServer(func, ...)
+    end
+    getrawmetatable(game).__namecall = __namecall
+end
+
+--- Visuals Section ---
+local function visuals()
+    local function billboardGui()
+        local billboard = Instance.new("BillboardGui")
+        billboard.Parent = game.Players.LocalPlayer.PlayerGui
+        billboard.Name = "Billboard"
+        billboard.Adornee = character.HumanoidRootPart
+        billboard.AlwaysOnTop = true
+        local name = Instance.new("TextLabel")
+        name.Parent = billboard
+        name.Name = "Name"
+        name.BackgroundTransparency = 1
+        name.Text = "Name"
+        name.TextColor3 = Color3.new(1, 1, 1)
+        local health = Instance.new("TextLabel")
+        health.Parent = billboard
+        health.Name = "Health"
+        health.BackgroundTransparency = 1
+        health.Text = "Health"
+        health.TextColor3 = Color3.new(1, 1, 1)
+        local level = Instance.new("TextLabel")
+        level.Parent = billboard
+        level.Name = "Level"
+        level.BackgroundTransparency = 1
+        level.Text = "Level"
+        level.TextColor3 = Color3.new(1, 1, 1)
+        local weapon = Instance.new("TextLabel")
+        weapon.Parent = billboard
+        weapon.Name = "Weapon"
+        weapon.BackgroundTransparency = 1
+        weapon.Text = "Weapon"
+        weapon.TextColor3 = Color3.new(1, 1, 1)
+    end
+    local function tracers()
+        local tracer = Instance.new("Part")
+        tracer.Parent = game.Workspace
+        tracer.Name = "Tracer"
+        tracer.Anchored = true
+        tracer.CanCollide = false
+        tracer.Transparency = 0.5
+        local function updateTracer()
+            tracer.Position = character.HumanoidRootPart.Position + character.HumanoidRootPart.CFrame.LookVector * 100
+        end
+        task.spawn(function()
+            while wait() do
+                updateTracer()
+            end
+        end)
+    end
+    local function fovChanger()
+        local fov = 90
+        local function changeFov()
+            camera.FieldOfView = fov
+        end
+        changeFov()
+        local function changeFovLoop()
+            while wait() do
+                changeFov()
             end
         end
-        
-        -- Handle visuals
-        if visualsTab:GetValue("enabled") then
-            local billboardGui = Instance.new("BillboardGui")
-            billboardGui.Parent = character.HumanoidRootPart
-            billboardGui.Adornee = character.HumanoidRootPart
-            billboardGui.StudsOffset = Vector3.new(0, 2, 0)
-            billboardGui.Name = "BillboardGui"
-            local textLabel = Instance.new("TextLabel")
-            textLabel.Parent = billboardGui
-            textLabel.Text = "Name: " .. player.Name .. "\nHealth: " .. character.Humanoid.Health .. "\nLevel: " .. player.Level .. "\nWeapon: " .. tool
-            textLabel.Size = UDim2.new(0, 200, 0, 100)
-            textLabel.BackgroundTransparency = 1
+        task.spawn(changeFovLoop)
+    end
+    billboardGui()
+    tracers()
+    fovChanger()
+end
+
+--- Lag Fixer Section ---
+local function lagFixer()
+    local function reduceParticles()
+        for _, child in pairs(character:GetChildren()) do
+            if child:IsA("BasePart") then
+                child.Material = Enum.Material.SmoothPlastic
+            end
+        end
+    end
+    local function reduceMaterials()
+        for _, child in pairs(character:GetChildren()) do
+            if child:IsA("BasePart") then
+                child.BrickColor = BrickColor.new("Bright blue")
+            end
+        end
+    end
+    reduceParticles()
+    reduceMaterials()
+end
+
+--- Fake Lag Section ---
+local function fakeLag()
+    local function setNetworkOwner()
+        game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart").NetworkOwner = nil
+    end
+    local function fakeLagLoop()
+        while wait(0.1) do
+            setNetworkOwner()
+        end
+    end
+    task.spawn(fakeLagLoop)
+end
+
+--- Utils Section ---
+local function tween(value, time, easing)
+    local function ease(t)
+        if easing == "linear" then
+            return t
+        elseif easing == "quadratic" then
+            return t^2
+        elseif easing == "cubic" then
+            return t^3
+        elseif easing == "quartic" then
+            return t^4
+        elseif easing == "quintic" then
+            return t^5
+        elseif easing == "sinusoidal" then
+            return math.sin((t - 1) * math.pi / 2 + math.pi / 2) + 1
+        elseif easing == "exponential" then
+            return math.pow(2, 10 * (t - 1))
+        elseif easing == "circular" then
+            return 1 - math.sqrt(1 - t^2)
+        elseif easing == "elastic" then
+            return math.pow(2, 10 * (t - 1)) * math.sin((t - 1) * (2 * math.pi) / 2 + math.pi / 2)
+        elseif easing == "backIn" then
+            return t * t * (3 - 2 * t)
+        elseif easing == "backOut
