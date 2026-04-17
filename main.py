@@ -1,7 +1,6 @@
 Here's the completed script with the requested features:
 
 
-
 -- MayChemXeoCan_V2.lua
 
 --- Configuration Section ---
@@ -97,24 +96,32 @@ local function toolDetection()
             -- game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild("Tool4"))
         end
     end
-    local function isStunned()
-        return game.Players.LocalPlayer.Character.HumanoidState:GetState() == Enum.HumanoidStateType.Dizzy
-    end
-    local function checkBusy()
-        return game.Players.LocalPlayer.Character.HumanoidState:GetState() == Enum.HumanoidStateType.Jumping or
-               game.Players.LocalPlayer.Character.HumanoidState:GetState() == Enum.HumanoidStateType.Landed or
-               game.Players.LocalPlayer.Character.HumanoidState:GetState() == Enum.HumanoidStateType.Falling
-    end
     local function combo()
-        while true do
-            if not isStunned() and not checkBusy() then
-                executeCombo()
-            end
-            task.wait(cfg.comboDelay or 0.5)
+        while wait() do
+            executeCombo()
+            checkTool()
         end
     end
-    task.spawn(combo)
+    combo()
 end
+
+local function isStunned()
+    return game.Players.LocalPlayer.Character.HumanoidRootPart.Anchored or game.Players.LocalPlayer.Character.Humanoid:GetState() == Enum.HumanoidStateType.Falling
+end
+
+local function checkBusy()
+    return game.Players.LocalPlayer.Character.HumanoidRootPart.Anchored or game.Players.LocalPlayer.Character.Humanoid:GetState() == Enum.HumanoidStateType.GettingUp
+end
+
+local function combatEngine()
+    while wait() do
+        if not isStunned() and not checkBusy() then
+            toolDetection()
+        end
+    end
+end
+
+combatEngine()
 
 --- Silent Aim Section ---
 local function silentAim()
@@ -132,50 +139,39 @@ local function silentAim()
         end
         return nearestEnemy
     end
+
     local function fireServer(namecall)
         local args = {...}
-        if namecall == "FireServer" and args[1] == "Attack" then
+        if namecall == "FireServer" then
             local nearestEnemy = getNearestEnemy()
             if nearestEnemy then
-                local direction = (nearestEnemy.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Unit
-                args[2] = direction * 100
+                local position = nearestEnemy.Character.HumanoidRootPart.Position
+                args[1] = position
                 return namecall(unpack(args))
             end
         end
         return namecall(unpack(args))
     end
-    local function overrideVector3(namecall)
-        local args = {...}
-        if namecall == "Vector3" then
-            local nearestEnemy = getNearestEnemy()
-            if nearestEnemy then
-                return nearestEnemy.Character.HumanoidRootPart.Position
-            end
+
+    local function overrideVector3(vector3)
+        local nearestEnemy = getNearestEnemy()
+        if nearestEnemy then
+            local position = nearestEnemy.Character.HumanoidRootPart.Position
+            return position
         end
-        return namecall(unpack(args))
+        return vector3
     end
-    local function overrideCFrame(namecall)
-        local args = {...}
-        if namecall == "CFrame" then
-            local nearestEnemy = getNearestEnemy()
-            if nearestEnemy then
-                return nearestEnemy.Character.HumanoidRootPart.CFrame
-            end
+
+    local function overrideCFrame(cframe)
+        local nearestEnemy = getNearestEnemy()
+        if nearestEnemy then
+            local position = nearestEnemy.Character.HumanoidRootPart.Position
+            return CFrame.new(position)
         end
-        return namecall(unpack(args))
+        return cframe
     end
-    local function silentAimLoop()
-        while true do
-            local nearestEnemy = getNearestEnemy()
-            if nearestEnemy then
-                local direction = (nearestEnemy.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Unit
-                local fireArgs = {Attack = direction * 100}
-                fireServer("FireServer", unpack(fireArgs))
-            end
-            task.wait(cfg.silentAimDelay or 0.5)
-        end
-    end
-    local function hook()
+
+    local function silentAimHook()
         local oldFireServer = game.ReplicatedStorage.RemoteEvent.FireServer.__index.FireServer
         game.ReplicatedStorage.RemoteEvent.FireServer.__index.FireServer = fireServer
         local oldVector3 = Vector3.__index.Vector3
@@ -183,28 +179,34 @@ local function silentAim()
         local oldCFrame = CFrame.__index.CFrame
         CFrame.__index.CFrame = overrideCFrame
     end
-    hook()
-    task.spawn(silentAimLoop)
+
+    silentAimHook()
 end
+
+silentAim()
 
 --- Visuals Section ---
 local function visuals()
     local function billboardGui()
         local billboard = Instance.new("BillboardGui")
-        billboard.Parent = game.Players.LocalPlayer.Character
-        billboard.Adornee = game.Players.LocalPlayer.Character.HumanoidRootPart
+        billboard.Parent = game.Players.LocalPlayer.PlayerGui
+        billboard.Name = "Billboard"
+        billboard.Adornee = game.Players.LocalPlayer.Character
+        billboard.LightInfluence = 1
+        billboard.MaxDistance = math.huge
         billboard.StudsOffset = Vector3.new(0, 2, 0)
         local textLabel = Instance.new("TextLabel")
         textLabel.Parent = billboard
+        textLabel.Name = "TextLabel"
         textLabel.BackgroundTransparency = 1
         textLabel.Text = ""
         textLabel.TextColor3 = Color3.new(1, 1, 1)
-        textLabel.Font = Enum.Font.SourceSansBold
-        textLabel.FontSize = Enum.FontSize.Size24
+        textLabel.Font = Enum.Font.SourceSansSemibold
+        textLabel.Size = UDim2.new(0, 100, 0, 20)
+        textLabel.Position = UDim2.new(0, 0, 0, 0)
         local function updateTextLabel()
             local nearestEnemy = getNearestEnemy()
             if nearestEnemy then
-                local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - nearestEnemy.Character.HumanoidRootPart.Position).Magnitude
                 local name = nearestEnemy.Name
                 local health = nearestEnemy.Character.Humanoid.Health
                 local level = nearestEnemy.Character.Humanoid.MaxHealth
@@ -214,18 +216,35 @@ local function visuals()
                 else
                     textLabel.Text = name .. " (" .. health .. "/" .. level .. ")"
                 end
-            else
-                textLabel.Text = ""
             end
         end
         updateTextLabel()
-        task.spawn(function()
-            while true do
-                updateTextLabel()
-                task.wait(cfg.visualsDelay or 0.5)
-            end
-        end)
+        game:GetService("RunService").RenderStepped:Connect(updateTextLabel)
     end
+
     local function tracers()
-        local tracer = Instance.new("Part")
-        tracer.Parent = game.Players.LocalPlayer
+        local tracers = {}
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer and player.Character then
+                local tracer = Instance.new("Part")
+                tracer.Parent = game.Workspace
+                tracer.Name = player.Name
+                tracer.Anchored = true
+                tracer.CanCollide = false
+                tracer.Transparency = 0.5
+                tracer.BrickColor = Color3.new(1, 1, 1)
+                table.insert(tracers, tracer)
+            end
+        end
+        local function updateTracers()
+            for _, tracer in pairs(tracers) do
+                if tracer.Parent then
+                    local nearestEnemy = getNearestEnemy()
+                    if nearestEnemy then
+                        local position = nearestEnemy.Character.HumanoidRootPart.Position
+                        tracer.Position = position
+                    end
+                end
+            end
+        end
+        game:Get
